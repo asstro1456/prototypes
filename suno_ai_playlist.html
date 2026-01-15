@@ -1,0 +1,182 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/suno_ai_playlist.html b/suno_ai_playlist.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c76585d6d8c7fa91d56f40fe7e0b21c66f36284
+--- /dev/null
++++ b/suno_ai_playlist.html
+@@ -0,0 +1,172 @@
++<!doctype html>
++<html lang="ko">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>Suno AI 작곡 모음</title>
++    <style>
++      :root {
++        color-scheme: light dark;
++        --bg: #f4f5f8;
++        --card: #ffffff;
++        --text: #1f2933;
++        --muted: #6b7280;
++        --accent: #6366f1;
++        --border: #e5e7eb;
++      }
++
++      @media (prefers-color-scheme: dark) {
++        :root {
++          --bg: #0f172a;
++          --card: #111827;
++          --text: #f9fafb;
++          --muted: #9ca3af;
++          --accent: #818cf8;
++          --border: #1f2937;
++        }
++      }
++
++      body {
++        margin: 0;
++        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
++          sans-serif;
++        background: var(--bg);
++        color: var(--text);
++      }
++
++      header {
++        padding: 48px 24px 32px;
++        text-align: center;
++        background: linear-gradient(135deg, var(--accent), transparent 75%);
++      }
++
++      header h1 {
++        margin: 0 0 12px;
++        font-size: clamp(1.8rem, 2vw + 1rem, 2.6rem);
++      }
++
++      header p {
++        margin: 0;
++        color: var(--muted);
++        font-size: 1rem;
++      }
++
++      main {
++        max-width: 960px;
++        margin: 0 auto;
++        padding: 24px;
++        display: grid;
++        gap: 16px;
++      }
++
++      .song-card {
++        background: var(--card);
++        border: 1px solid var(--border);
++        border-radius: 16px;
++        padding: 20px;
++        display: grid;
++        gap: 12px;
++        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
++      }
++
++      .song-header {
++        display: flex;
++        justify-content: space-between;
++        flex-wrap: wrap;
++        gap: 12px;
++      }
++
++      .song-title {
++        margin: 0;
++        font-size: 1.25rem;
++      }
++
++      .tag {
++        background: rgba(99, 102, 241, 0.12);
++        color: var(--accent);
++        padding: 4px 10px;
++        border-radius: 999px;
++        font-size: 0.85rem;
++      }
++
++      .song-meta {
++        display: flex;
++        flex-wrap: wrap;
++        gap: 12px;
++        color: var(--muted);
++        font-size: 0.95rem;
++      }
++
++      .song-notes {
++        margin: 0;
++        color: var(--text);
++        line-height: 1.6;
++      }
++
++      .song-links {
++        display: flex;
++        flex-wrap: wrap;
++        gap: 12px;
++      }
++
++      .song-links a {
++        text-decoration: none;
++        color: var(--accent);
++        font-weight: 600;
++      }
++
++      footer {
++        text-align: center;
++        padding: 24px;
++        color: var(--muted);
++        font-size: 0.9rem;
++      }
++    </style>
++  </head>
++  <body>
++    <header>
++      <h1>Suno AI 작곡 모음</h1>
++      <p>내가 만든 Suno AI 곡들을 한 곳에서 관리하는 플레이리스트입니다.</p>
++    </header>
++
++    <main>
++      <section class="song-card">
++        <div class="song-header">
++          <h2 class="song-title">곡 제목을 입력하세요</h2>
++          <span class="tag">장르/무드</span>
++        </div>
++        <div class="song-meta">
++          <span>발매일: 2024-01-01</span>
++          <span>길이: 3:12</span>
++          <span>키워드: 따뜻한, 감성</span>
++        </div>
++        <p class="song-notes">
++          곡 소개나 가사 요약을 적어두면 곡을 쉽게 떠올릴 수 있어요.
++        </p>
++        <div class="song-links">
++          <a href="#" target="_blank" rel="noreferrer">Suno 링크</a>
++          <a href="#" target="_blank" rel="noreferrer">음원 다운로드</a>
++        </div>
++      </section>
++
++      <section class="song-card">
++        <div class="song-header">
++          <h2 class="song-title">두 번째 곡 제목</h2>
++          <span class="tag">장르/무드</span>
++        </div>
++        <div class="song-meta">
++          <span>발매일: 2024-02-10</span>
++          <span>길이: 2:48</span>
++          <span>키워드: 드라이브, 에너지</span>
++        </div>
++        <p class="song-notes">추가로 공유하고 싶은 제작 메모를 남겨보세요.</p>
++        <div class="song-links">
++          <a href="#" target="_blank" rel="noreferrer">Suno 링크</a>
++          <a href="#" target="_blank" rel="noreferrer">음원 다운로드</a>
++        </div>
++      </section>
++    </main>
++
++    <footer>필요한 만큼 카드 섹션을 복사해서 곡을 추가하세요.</footer>
++  </body>
++</html>
+ 
+EOF
+)
