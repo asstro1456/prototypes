@@ -1,0 +1,2336 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/VNScene.script b/VNScene.script
+new file mode 100644
+index 0000000000000000000000000000000000000000..10d0824013055a1765c1edd208ce70aabb2a22ef
+--- /dev/null
++++ b/VNScene.script
+@@ -0,0 +1,2326 @@
++@Component script VNScene extends Component
++  property integer count = 1
++  property integer isChoice = 0
++  property string bgmId = ""
++  property integer sceneType = 0
++  property Entity uiNameEntity = nil
++  property Entity uiMessageEntity = nil
++  property Entity uiTalkPanel = nil
++  property Entity uiPortraitEntity = nil
++  property Entity uiBackgroundEntity = nil
++  property Entity uiNamePanel = nil
++  property Entity uiChoicePanel = nil
++  property Entity uiChoicePanel2 = nil
++  property Entity uiChoicePanel3 = nil
++  property Entity uiChoicePanel4 = nil
++  property Entity uiChoiceButton01 = nil
++  property Entity uiChoiceButton02 = nil
++  property Entity uiChoiceButton03 = nil
++  property Entity uiGroup = nil
++  property Entity uiMainGroup = nil
++  property Entity uiSaveButton = nil
++  property Entity uiCGShakeRoot = nil
++  property any scriptData = nil
++  property any artData = nil
++  property any soundData = nil
++  property any charData = nil
++  property any choiceData = nil
++  property any artRowById = nil
++  property any soundRowById = nil
++  property any charRowById = nil
++  property any choiceMap = nil
++  property any scriptRowByScriptId = nil
++  property integer curBgId = 0
++  property integer curCgId = 0
++  property integer curBgmId = 0
++  property integer shakeLocked = 0
++  property integer nextLocked = 0
++  property number nextLockSec = 0.08
++  property integer choiceHooked = 0
++  property integer currentChoiceGroupId = 0
++  property integer currentChoiceCount = 0
++  property any cgEntityById = nil
++  property number swapDelaySec = 0
++  property integer cgSwitchMode = 1
++  property Entity uiPopupGroup = nil
++  property Entity uiPopupPanel = nil
++  property Entity uiPopupText = nil
++  property Entity uiPopupChoiceText = nil
++  property Entity uiPopupSaveText = nil
++  property Entity uiPopupChoiceRoot = nil
++  property Entity uiPopupSaveRoot = nil
++  property Entity uiPopupBack = nil
++  property integer popupLocked = 0
++  property integer dbg = 0
++  property integer pendingSavePopup = 0
++  property string pendingSaveMsg = ""
++  property any cgShaker = nil
++  property Entity uiCGCanvasRoot = nil
++  property integer cgFadeLocked = 0
++  property number cgFadeStepSec = 0.02
++  property number cgFadeDurationSec = 0.25
++  property integer affection = 0
++  property integer affectionLoaded = 0
++  property integer MIN_AFF = 0
++  property integer MAX_AFF = 100
++  property integer choiceClickLocked = 0
++  property Entity uiScreenFXGroup = nil
++  property Entity uiBlackOverlay = nil
++  property Entity uiWhiteOverlay = nil
++  property integer screenFxLocked = 0
++  property integer item = 0
++  property number req_item = 0
++  property integer MIN_ITEM = 0
++  property integer MAX_ITEM = 2
++  property Entity uiBlackSolid = nil
++
++  -- Lifecycle
++  @ExecSpace("ClientOnly")
++  method void OnBeginPlay()
++    self.uiMainGroup = _EntityService:GetEntityByPath("/ui/MainGroup")
++    self.uiGroup = _EntityService:GetEntityByPath("/ui/UIGroup")
++
++    if self.uiGroup ~= nil then
++      self.uiGroup.Enable = false
++    end
++
++    if self.uiMainGroup ~= nil then
++      self.uiMainGroup.Enable = true
++    end
++
++    self:BindMainMenuButtons()
++  end
++
++  @ExecSpace("ClientOnly")
++  method void OnStartButtonClick(ButtonClickEvent event)
++    self:ResetRuntimeLocks()
++    self:ResetScreenFX()
++
++    local btnName = event.Entity.Name
++    if btnName == "NewButton" then
++      self.affection = 0
++      self.affectionLoaded = 1
++      self.item = 0
++      self:OnVNScenePlay(1)
++    elseif btnName == "LoadButton" then
++      self.affectionLoaded = 0
++      self:LoadUserData()
++    end
++  end
++
++  -- Data helpers
++  method any BuildIdRowIndexMap(any dataTable, string idColumn)
++    local map = {}
++    local rowCount = dataTable:GetRowCount()
++
++    for row = 1, rowCount do
++      local raw = dataTable:GetCell(row, idColumn)
++      local id = tonumber(raw)
++      if id ~= nil and id >= 1 then
++        if map[id] == nil then
++          map[id] = row
++        end
++      end
++    end
++
++    return map
++  end
++
++  method any BuildChoiceMap(any choiceTable)
++    local map = {}
++    if choiceTable == nil then
++      log("[ERR] BuildChoiceMap: choiceTable nil")
++      return map
++    end
++
++    local rowCount = choiceTable:GetRowCount()
++    log("[DBG] BuildChoiceMap rowCount=" .. tostring(rowCount))
++
++    local startRow = 1
++    local test = choiceTable:GetCell(1, "choice_group_id")
++    if test == nil then
++      startRow = 0
++      log("[DBG] ChoiceTable seems 0-based indexing")
++    end
++
++    local endRow = (startRow == 1) and rowCount or (rowCount - 1)
++    for row = startRow, endRow do
++      local rawGid = choiceTable:GetCell(row, "choice_group_id")
++      local rawNo = choiceTable:GetCell(row, "choice_no")
++      local gid = tonumber(rawGid) or 0
++      local no = tonumber(rawNo) or 0
++
++      if gid == 5001 then
++        log("[DBG] Choice hit row="..tostring(row).." gid="..tostring(rawGid).." no="..tostring(rawNo))
++      end
++
++      if gid > 0 and no >= 1 and no <= 4 then
++        if map[gid] == nil then
++          map[gid] = {}
++        end
++        map[gid][no] = row
++      end
++    end
++
++    return map
++  end
++
++  method string GetArtRuidById(number artId)
++    local row = self.artRowById[artId]
++    if row == nil then
++      return ""
++    end
++
++    return self.artData:GetCell(row, "ruid") or ""
++  end
++
++  method string GetSoundRuidById(number soundId)
++    local row = self.soundRowById[soundId]
++    if row == nil then
++      return ""
++    end
++
++    return self.soundData:GetCell(row, "ruid") or ""
++  end
++
++  method string GetCharacterName(number characterId)
++    local row = self.charRowById[characterId]
++    if row == nil then
++      return ""
++    end
++
++    return self.charData:GetCell(row, "name") or ""
++  end
++
++  method number GetCharacterPortraitArtId(number characterId)
++    local row = self.charRowById[characterId]
++    if row == nil then
++      return 0
++    end
++
++    local pid = self.charData:GetCell(row, "portrait_id")
++    return tonumber(pid) or 0
++  end
++
++  @ExecSpace("ClientOnly")
++  method Entity FindDescendantByName(Entity root, string targetName)
++    if root == nil or targetName == nil or targetName == "" then
++      return nil
++    end
++
++    --- BFS/DFS 어느 쪽이든 OK. 여기선 DFS
++    local function Dfs(e)
++      if e == nil then
++        return nil
++      end
++
++      if e.Name == targetName then
++        return e
++      end
++
++      local kids = e.Children
++      if kids ~= nil then
++        for _, c in pairs(kids) do
++          local hit = Dfs(c)
++          if hit ~= nil then
++            return hit
++          end
++        end
++      end
++
++      return nil
++    end
++
++    return Dfs(root)
++  end
++
++  -- Popup UI
++  @ExecSpace("ClientOnly")
++  method void BindPopupUI()
++    self.uiPopupGroup = _EntityService:GetEntityByPath("/ui/PopupGroup")
++    self.uiPopupBack = _EntityService:GetEntityByPath("/ui/PopupGroup/PopupBack")
++    self.uiPopupPanel = _EntityService:GetEntityByPath("/ui/PopupGroup/PopupBack/PopupPanel")
++    self.uiPopupChoiceText = _EntityService:GetEntityByPath("/ui/PopupGroup/PopupBack/PopupPanel/PopupMessage_choice")
++    self.uiPopupSaveText = _EntityService:GetEntityByPath("/ui/PopupGroup/PopupBack/PopupPanel/PopupMessage_save")
++
++    --- Root도 여기서 확보
++    self.uiPopupChoiceRoot = self:GetPopupRoot(self.uiPopupChoiceText)
++    self.uiPopupSaveRoot = self:GetPopupRoot(self.uiPopupSaveText)
++
++    log("[DBG] PopupGroup="..tostring(self.uiPopupGroup)
++      .." Back="..tostring(self.uiPopupBack)
++      .." Panel="..tostring(self.uiPopupPanel)
++      .." ChoiceText="..tostring(self.uiPopupChoiceText)
++      .." SaveText="..tostring(self.uiPopupSaveText)
++      .." ChoiceRoot="..tostring(self.uiPopupChoiceRoot)
++      .." SaveRoot="..tostring(self.uiPopupSaveRoot))
++
++    --- 초기 화면 어둡게/가림 방지: 그룹은 켜도 되고, Back/Panel/Texts는 무조건 OFF
++    if self.uiPopupGroup ~= nil then
++      self.uiPopupGroup.Enable = true
++    end
++
++    if self.uiPopupBack ~= nil then
++      self.uiPopupBack.Enable = false
++    end
++
++    if self.uiPopupPanel ~= nil then
++      self.uiPopupPanel.Enable = false
++    end
++
++    if self.uiPopupChoiceText ~= nil then
++      self.uiPopupChoiceText.Enable = false
++    end
++
++    if self.uiPopupSaveText ~= nil then
++      self.uiPopupSaveText.Enable = false
++    end
++  end
++
++  @ExecSpace("ClientOnly")
++  method void OpenPopupBase()
++    if self.uiPopupGroup == nil or self.uiPopupBack == nil or self.uiPopupPanel == nil then
++      self:BindPopupUI()
++    end
++
++    if self.uiPopupGroup ~= nil then
++      self.uiPopupGroup.Enable = true
++    end
++
++    if self.uiPopupBack ~= nil then
++      self.uiPopupBack.Enable = true
++    end
++
++    if self.uiPopupPanel ~= nil then
++      self.uiPopupPanel.Enable = true
++    end
++  end
++
++  @ExecSpace("ClientOnly")
++  method void ClosePopupBase()
++    --- 텍스트 먼저 끄고 베이스 OFF
++    if self.uiPopupChoiceText ~= nil then
++      self.uiPopupChoiceText.Enable = false
++    end
++
++    if self.uiPopupSaveText ~= nil then
++      self.uiPopupSaveText.Enable = false
++    end
++
++    if self.uiPopupPanel ~= nil then
++      self.uiPopupPanel.Enable = false
++    end
++
++    if self.uiPopupBack ~= nil then
++      self.uiPopupBack.Enable = false
++    end
++  end
++
++  method Entity GetPopupRoot(Entity textEntity)
++    if textEntity == nil then
++      return nil
++    end
++
++    if textEntity.Parent ~= nil then
++      return textEntity.Parent
++    end
++
++    return textEntity
++  end
++
++  @ExecSpace("ClientOnly")
++  method void ShowChoicePopup(string msg)
++    if self.popupLocked == 1 then
++      return
++    end
++
++    self.popupLocked = 1
++    self.nextLocked = 1
++    self:OpenPopupBase()
++
++    if self.uiPopupSaveText ~= nil then
++      self.uiPopupSaveText.Enable = false
++    end
++
++    if self.uiPopupChoiceText == nil or self.uiPopupChoiceText.TextComponent == nil then
++      log("[ERR] Choice popup text not bound")
++      self:ClosePopupBase()
++      self.nextLocked = 0
++      self.popupLocked = 0
++      return
++    end
++
++    if msg ~= nil and msg ~= "" then
++      self.uiPopupChoiceText.TextComponent.Text = msg
++    end
++
++    self.uiPopupChoiceText.Enable = true
++    wait(2.0)
++    self:ClosePopupBase()
++    self.nextLocked = 0
++    self.popupLocked = 0
++  end
++
++  @ExecSpace("ClientOnly")
++  method void ShowSavePopup(string msg)
++    log("[DBG] ShowSavePopup enter locked="..tostring(self.popupLocked)
++      .." rootPanel="..tostring(self.uiPopupPanel)
++      .." saveText="..tostring(self.uiPopupSaveText))
++
++    if self.popupLocked == 1 then
++      return
++    end
++
++    self.popupLocked = 1
++    self.nextLocked = 1
++
++    --- 베이스 ON 보장
++    self:OpenPopupBase()
++
++    --- 다른 텍스트는 끄고, 세이브 텍스트만 표시
++    if self.uiPopupChoiceText ~= nil then
++      self.uiPopupChoiceText.Enable = false
++    end
++
++    if self.uiPopupSaveText == nil or self.uiPopupSaveText.TextComponent == nil then
++      log("[ERR] Save popup text not bound")
++      self:ClosePopupBase()
++      self.nextLocked = 0
++      self.popupLocked = 0
++      return
++    end
++
++    if msg ~= nil and msg ~= "" then
++      self.uiPopupSaveText.TextComponent.Text = msg
++    end
++
++    self.uiPopupSaveText.Enable = true
++    wait(1.0)
++    self:ClosePopupBase()
++    self.nextLocked = 0
++    self.popupLocked = 0
++  end
++
++  @ExecSpace("ClientOnly")
++  method void ShowPopupForSeconds(string msg, number sec)
++    if self.uiPopupPanel == nil or self.uiPopupText == nil then
++      log("[ERR] PopupPanel/PopupText not bound. msg=" .. tostring(msg))
++      return
++    end
++
++    self.uiPopupText.TextComponent.Text = msg
++    self.uiPopupPanel.Enable = true
++
++    local t = sec
++    if t == nil or t <= 0 then
++      t = 1.2
++    end
++
++    wait(t)
++    self.uiPopupPanel.Enable = false
++  end
++
++  -- Scene init
++  @ExecSpace("ClientOnly")
++  method void OnVNScenePlay(integer startId)
++    log("시작 ID : " .. tostring(startId))
++    self.choiceHooked = 0
++
++    if startId ~= 1 then
++      self.count = startId
++    end
++
++    --- 테이블 로드
++    self.scriptData = _DataService:GetTable("Script")
++    self.artData = _DataService:GetTable("Art")
++    self.soundData = _DataService:GetTable("Sound")
++    self.charData = _DataService:GetTable("Character")
++    self.choiceData = _DataService:GetTable("Choice")
++
++    if self.choiceData == nil then
++      log("[ERR] Choice table not found")
++    end
++
++    --- 맵 생성
++    self.choiceMap = self:BuildChoiceMap(self.choiceData)
++    self.artRowById = self:BuildIdRowIndexMap(self.artData, "art_id")
++    self.soundRowById = self:BuildIdRowIndexMap(self.soundData, "sound_id")
++    self.charRowById = self:BuildIdRowIndexMap(self.charData, "character_id")
++    self.scriptRowByScriptId = self:BuildIdRowIndexMap(self.scriptData, "script_id")
++
++    --- UI 엔티티 연결
++    self.uiNameEntity = _EntityService:GetEntityByPath("/ui/UIGroup/TalkPanel/NamePanel/Name")
++    self.uiMessageEntity = _EntityService:GetEntityByPath("/ui/UIGroup/TalkPanel/Text")
++    self.uiTalkPanel = _EntityService:GetEntityByPath("/ui/UIGroup/TalkPanel")
++    self.uiNamePanel = _EntityService:GetEntityByPath("/ui/UIGroup/TalkPanel/NamePanel")
++    self.uiPortraitEntity = _EntityService:GetEntityByPath("/ui/UIGroup/TalkPanel/Portrait")
++    self.uiBackgroundEntity = _EntityService:GetEntityByPath("/ui/UIGroup/Background")
++    self.uiChoicePanel = _EntityService:GetEntityByPath("/ui/UIGroup/ChoicePanel")
++    self.uiChoicePanel2 = _EntityService:GetEntityByPath("/ui/UIGroup/ChoicePanel/ChoicePanel_2")
++    self.uiChoicePanel3 = _EntityService:GetEntityByPath("/ui/UIGroup/ChoicePanel/ChoicePanel_3")
++    self.uiChoicePanel4 = _EntityService:GetEntityByPath("/ui/UIGroup/ChoicePanel/ChoicePanel_4")
++
++    self:CloseChoiceUI()
++
++    log("[DBG] uiChoicePanel=" .. tostring(self.uiChoicePanel))
++    log("[DBG] uiChoicePanel2=" .. tostring(self.uiChoicePanel2))
++    log("[DBG] uiChoicePanel3=" .. tostring(self.uiChoicePanel3))
++    log("[DBG] uiChoicePanel4=" .. tostring(self.uiChoicePanel4))
++
++    self.uiMainGroup = _EntityService:GetEntityByPath("/ui/MainGroup")
++    self.uiGroup = _EntityService:GetEntityByPath("/ui/UIGroup")
++    self.uiSaveButton = _EntityService:GetEntityByPath("/ui/UIGroup/SaveButton")
++    self.uiCGShakeRoot = _EntityService:GetEntityByPath("/ui/UIGroup/CGShakeRoot")
++    self.uiCGCanvasRoot = self.uiCGShakeRoot
++
++    self:BindScreenFXUI()
++
++    if self.uiScreenFXGroup ~= nil then
++      self.uiScreenFXGroup.Enable = true
++    end
++
++    if self.uiBlackOverlay ~= nil then
++      self.uiBlackOverlay.Enable = false
++      self:SetCanvasGroupAlpha(self.uiBlackOverlay, 0)
++    end
++
++    if self.uiWhiteOverlay ~= nil then
++      self.uiWhiteOverlay.Enable = false
++      self:SetCanvasGroupAlpha(self.uiWhiteOverlay, 0)
++    end
++
++    self:BindPopupUI()
++    self.uiPopupChoiceRoot = self:GetPopupRoot(self.uiPopupChoiceText)
++    self.uiPopupSaveRoot = self:GetPopupRoot(self.uiPopupSaveText)
++
++    if self.uiPopupPanel ~= nil then
++      self.uiPopupPanel.Enable = false
++    end
++
++    if self.uiPopupChoiceRoot ~= nil then
++      self.uiPopupChoiceRoot.Enable = false
++    end
++
++    if self.uiPopupSaveRoot ~= nil then
++      self.uiPopupSaveRoot.Enable = false
++    end
++
++    log("[DBG] PopupMessage_choice=" .. tostring(self.uiPopupChoiceText))
++    log("[DBG] PopupMessage_save=" .. tostring(self.uiPopupSaveText))
++    log("[DBG] PopupChoiceRoot=" .. tostring(self.uiPopupChoiceRoot))
++    log("[DBG] PopupSaveRoot=" .. tostring(self.uiPopupSaveRoot))
++
++    ---텍스트 엔티티 검증
++    local curText = ""
++    if self.uiPopupSaveText ~= nil and self.uiPopupSaveText.TextComponent ~= nil then
++      curText = self.uiPopupSaveText.TextComponent.Text
++    end
++    log("[DBG] PopupSave current text=" .. tostring(curText))
++
++    --- CG 엔티티 초기화
++    self:InitFixedCGEntities()
++    self:DisableAllFixedCG()
++    self.curCgId = 0
++
++    --- UI 상태
++    self.uiGroup.Enable = true
++    self.uiMainGroup.Enable = false
++    self.sceneType = 1
++
++    if self.uiChoicePanel ~= nil then
++      self.uiChoicePanel.Enable = false
++    end
++
++    --- 상태 캐시 초기화
++    self.curBgId = 0
++    self.curCgId = 0
++    self.curBgmId = 0
++
++    --- 저장 버튼
++    if self.uiSaveButton ~= nil then
++      self.uiSaveButton:ConnectEvent(ButtonClickEvent, self.OnSaveClick)
++    end
++
++    --- 선택지 버튼 훅
++    if self.choiceHooked == 0 then
++      self:HookChoicePanelButtons(self.uiChoicePanel2)
++      self:HookChoicePanelButtons(self.uiChoicePanel3)
++      self:HookChoicePanelButtons(self.uiChoicePanel4)
++      self.choiceHooked = 1
++    end
++
++    self:ShowNextText()
++  end
++
++  -- Scene flow
++  method void ApplyBgCg(number bgId, number cgId)
++    if bgId == -1 then
++      bgId = 0
++    end
++
++    if bgId > 0 then
++      local ruid = self:GetArtRuidById(bgId)
++      if ruid ~= "" then
++        self.curBgId = bgId
++        if self.uiBackgroundEntity ~= nil then
++          self.uiBackgroundEntity.SpriteGUIRendererComponent.ImageRUID = ruid
++        end
++      else
++        log("[ERR] BG ruid empty. bgId=" .. tostring(bgId))
++      end
++    end
++
++    if self.uiBackgroundEntity ~= nil then
++      self.uiBackgroundEntity.Enable = (self.curBgId > 0)
++    end
++
++    self:ApplyCG(cgId)
++  end
++
++  method void ValidateScriptTextLinks()
++    local rowCount = self.scriptData:GetRowCount()
++    for r = 1, rowCount do
++      local tid = tonumber(self.scriptData:GetCell(r, "text_id")) or 0
++      if tid > 0 then
++        local txt = self.scriptData:GetCell(r, "text") or ""
++        if txt == "" then
++          local sid = tonumber(self.scriptData:GetCell(r, "script_id")) or 0
++          log("[ERR] Script(script_id="..tostring(sid)..") has text_id="..tostring(tid).." but empty text")
++        end
++      end
++    end
++  end
++
++  method void ShowNextText()
++    self:CloseChoiceUI()
++
++    if self.shakeLocked == 1 then
++      return
++    end
++
++    if self.popupLocked == 1 then
++      return
++    end
++
++    if self.nextLocked == 1 then
++      return
++    end
++
++    if self.cgFadeLocked == 1 then
++      self.nextLocked = 0
++      return
++    end
++
++    local sRow = nil
++    if self.scriptRowByScriptId ~= nil then
++      sRow = self.scriptRowByScriptId[self.count]
++    end
++
++    if sRow == nil then
++      log("[ERR] script_id not found: " .. tostring(self.count))
++      self.nextLocked = 0
++      return
++    end
++
++    local textId = tonumber(self.scriptData:GetCell(sRow, "text_id")) or 0
++    local characterId = tonumber(self.scriptData:GetCell(sRow, "character_id")) or 0
++    local bgId = tonumber(self.scriptData:GetCell(sRow, "bg_id")) or 0
++    local cgId = tonumber(self.scriptData:GetCell(sRow, "cg_id")) or 0
++    local bgmId = tonumber(self.scriptData:GetCell(sRow, "bgm_id")) or 0
++    local sfxId = tonumber(self.scriptData:GetCell(sRow, "sfx_id")) or 0
++    local shakePreset = tonumber(self.scriptData:GetCell(sRow, "shake_preset")) or 0
++    self.isChoice = tonumber(self.scriptData:GetCell(sRow, "is_choice")) or 0
++    local choiceGroupId = tonumber(self.scriptData:GetCell(sRow, "choice_group_id")) or 0
++    local cgFadePreset = tonumber(self.scriptData:GetCell(sRow, "cg_fade_preset")) or 0
++
++    -- message 확보
++    local message = ""
++    if textId > 0 then
++      message = self.scriptData:GetCell(sRow, "text") or ""
++    end
++
++    -- 1) 대사/이름/초상화는 먼저 갱신 (선택지 행에서도 보이게)
++    self:ApplyTalkUI(characterId, message)
++
++    -- 2) 흔들림 프리셋
++    if shakePreset > 0 then
++      local p = self:GetShakePreset(shakePreset)
++      if p ~= nil then
++        self:ExplosionShakeCG(p[1], p[2], p[3], p[4], p[5], p[6])
++      end
++    end
++
++    -- 3) 다음 ID 처리 (+ 메인 복귀 -1)
++    local rawNext = self.scriptData:GetCell(sRow, "next_script_id")
++    local nextScriptId = tonumber(rawNext) or 0
++
++    -- 정책: next_script_id == -1 이면 메인으로 복귀
++    if nextScriptId == -1 then
++      self:ReturnToMain()
++      return
++    end
++
++    local nextId = (nextScriptId > 0) and nextScriptId or (self.count + 1)
++
++    -- 4) 선택지면: BG/CG 반영 후 choice 표시하고 멈춤 (count 갱신 없음)
++    if self.isChoice == 1 then
++      self:ApplyBgCg(bgId, cgId)
++      self:ShowChoice(choiceGroupId)
++      return
++    end
++
++    -- 5) BG/CG + ScreenFX 프리셋
++    if cgFadePreset ~= 1 then
++      self:ApplyBgCg(bgId, cgId)
++    end
++
++    if cgFadePreset == 1 then
++      self:DoBlackoutTransitionFX(1.1, 0.12, sfxId, bgId, cgId)
++      self.count = nextId
++      return
++    elseif cgFadePreset == 2 then
++      self:DoFlashbangFX(1.1, sfxId)
++      self:ApplyBgCg(bgId, cgId)
++      self.count = nextId
++      return
++    end
++
++    if message == nil or message == "" then
++      self.uiTalkPanel.Enable = false
++    else
++      self.uiTalkPanel.Enable = true
++      self.uiMessageEntity.TextComponent.Text = message
++    end
++
++    --- 화자/나레이션
++    if characterId == 0 then
++      self.uiNameEntity.Enable = false
++      self.uiNamePanel.Enable = false
++      if self.uiPortraitEntity ~= nil then
++        self.uiPortraitEntity.Enable = false
++      end
++    else
++      local name = self:GetCharacterName(characterId)
++      self.uiNameEntity.TextComponent.Text = name
++      self.uiNameEntity.Enable = true
++      self.uiNamePanel.Enable = true
++      local portraitArtId = self:GetCharacterPortraitArtId(characterId)
++      if portraitArtId > 0 and self.uiPortraitEntity ~= nil then
++        local portraitRuid = self:GetArtRuidById(portraitArtId)
++        if portraitRuid ~= "" then
++          self.uiPortraitEntity.SpriteGUIRendererComponent.ImageRUID = portraitRuid
++          self.uiPortraitEntity.Enable = true
++        end
++      end
++    end
++
++    --- BGM
++    self:ApplyBgm(bgmId)
++
++    if sfxId ~= nil and tonumber(sfxId) > 0 then
++      local sfxRuid = self:GetSoundRuidById(tonumber(sfxId))
++      if sfxRuid ~= "" then
++        _SoundService:PlaySound(sfxRuid, 1)
++      end
++    end
++
++    --- count 갱신은 마지막에 일관되게
++    self.count = nextId
++    wait(self.nextLockSec)
++    self.nextLocked = 0
++  end
++
++  method void ShowChoice(number choiceGroupId)
++    -- 0) 일단 전부 닫고 시작(상태 꼬임 방지)
++    self:CloseChoiceUI()
++    self.currentChoiceGroupId = tonumber(choiceGroupId) or 0
++
++    log("[DBG] ShowChoice enter gid="..tostring(self.currentChoiceGroupId))
++
++    -- 1) 그룹 찾기
++    local g = (self.choiceMap ~= nil) and self.choiceMap[self.currentChoiceGroupId] or nil
++    if g == nil then
++      log("[ERROR] choice group not found: " .. tostring(self.currentChoiceGroupId))
++      return
++    end
++
++    -- 2) 선택지 개수
++    local c = 0
++    for i = 1, 4 do
++      if g[i] ~= nil then
++        c = c + 1
++      end
++    end
++
++    self.currentChoiceCount = c
++
++    -- 3) 표시 패널 결정
++    local panel = nil
++    if c == 2 then
++      panel = self.uiChoicePanel2
++    elseif c == 3 then
++      panel = self.uiChoicePanel3
++    elseif c == 4 then
++      panel = self.uiChoicePanel4
++    else
++      log("[ERROR] invalid choice count: " .. tostring(c))
++      return
++    end
++
++    if self.uiChoicePanel == nil or panel == nil then
++      log("[ERROR] ChoicePanel refs missing. base="..tostring(self.uiChoicePanel).." panel="..tostring(panel))
++      return
++    end
++
++    -- 4) base/panel 렌더 복구 (Enable만으로는 안 보일 수 있음)
++    self:ForceVisibleChain(self.uiChoicePanel, true)
++    self:ForceVisibleChain(panel, true)
++    self.uiChoicePanel.Enable = true
++    panel.Enable = true
++
++    if self.uiChoicePanel.Visible ~= nil then
++      self.uiChoicePanel.Visible = true
++    end
++
++    if panel.Visible ~= nil then
++      panel.Visible = true
++    end
++
++    log("[DBG] ShowChoice baseEnable="..tostring(self.uiChoicePanel.Enable)
++      .." baseVisible="..tostring(self.uiChoicePanel.Visible)
++      .." panelEnable="..tostring(panel.Enable)
++      .." panelVisible="..tostring(panel.Visible)
++      .." count="..tostring(c))
++
++    -- 5) 버튼 1~4 세팅 (FindDescendantByName로 btn nil 방지)
++    for i = 1, 4 do
++      local nameA = "ChoiceButton0" .. tostring(i) -- 01/02/03/04
++      local nameB = "ChoiceButton" .. tostring(i) -- 1/2/3/4
++      local btn = self:FindDescendantByName(panel, nameA)
++      if btn == nil then
++        btn = self:FindDescendantByName(panel, nameB)
++      end
++
++      local row = g[i]
++      if btn == nil then
++        log("[WARN] ShowChoice missing button i="..tostring(i)
++          .." tryA="..nameA.." tryB="..nameB
++          .." panel="..tostring(panel))
++      else
++        -- 버튼 렌더 복구
++        self:ForceVisibleChain(btn, true)
++        if btn.Visible ~= nil then
++          btn.Visible = true
++        end
++
++        if row ~= nil then
++          -- 텍스트 세팅
++          local txt = ""
++          if self.choiceData ~= nil then
++            txt = self.choiceData:GetCell(row, "choice_text") or ""
++          end
++
++          -- 텍스트 엔티티도 descendant로 탐색(구조 차이 대응)
++          local btnText = btn:GetChildByName("ChoiceText")
++          if btnText == nil then
++            btnText = self:FindDescendantByName(btn, "ChoiceText")
++          end
++
++          if btnText ~= nil then
++            self:ForceVisibleChain(btnText, true)
++            if btnText.Visible ~= nil then
++              btnText.Visible = true
++            end
++            if btnText.TextComponent ~= nil then
++              btnText.TextComponent.Text = txt
++            end
++          else
++            log("[WARN] ShowChoice missing ChoiceText under btn="..tostring(btn))
++          end
++
++          btn.Enable = true
++        else
++          -- 해당 번호 선택지 없음
++          btn.Enable = false
++        end
++      end
++    end
++  end
++
++  method void OnChoiceClick(ButtonClickEvent event)
++    if self.popupLocked == 1 then
++      return
++    end
++
++    if self.nextLocked == 1 then
++      return
++    end
++
++    if self.cgFadeLocked == 1 then
++      return
++    end
++
++    -- 로드 전 방지(복구) - 중복 제거
++    if self.affectionLoaded == 0 then
++      log("[WARN] OnChoiceClick blocked: affection not loaded yet")
++      return
++    end
++
++    -- 버튼 idx 파싱 (01/1 둘 다 대응)
++    local name = event.Entity ~= nil and event.Entity.Name or ""
++    local digits = string.match(name, "(%d+)$")
++    local idx = tonumber(digits) or 0
++    log("[DBG] OnChoiceClick name="..tostring(name).." digits="..tostring(digits).." idx="..tostring(idx))
++
++    if idx < 1 or idx > 4 then
++      log("[ERR] invalid choice idx: " .. tostring(idx))
++      self.nextLocked = 0
++      return
++    end
++
++    -- choice map에서 cRow 확보
++    local groupId = self.currentChoiceGroupId
++    local g = (self.choiceMap ~= nil) and self.choiceMap[groupId] or nil
++    if g == nil then
++      self:ShowChoicePopup("선택지 그룹이 없습니다: " .. tostring(groupId))
++      self.nextLocked = 0
++      return
++    end
++
++    local cRow = g[idx]
++    log("[DBG] choice groupId="..tostring(groupId)
++      .." cRow="..tostring(cRow)
++      .." g1="..tostring(g[1])
++      .." g2="..tostring(g[2])
++      .." g3="..tostring(g[3])
++      .." g4="..tostring(g[4]))
++
++    if cRow == nil then
++      self:ShowChoicePopup("선택지 데이터가 없습니다.\n그룹="..tostring(groupId).." / 번호="..tostring(idx))
++      self.nextLocked = 0
++      return
++    end
++
++    -- cRow 확보된 뒤: 분기 데이터 읽기
++    local reqAff = tonumber(self.choiceData:GetCell(cRow, "req_aff")) or 0
++    local passId = tonumber(self.choiceData:GetCell(cRow, "move_script_id_pass")) or 0
++    local failId = tonumber(self.choiceData:GetCell(cRow, "move_script_id_fail")) or 0
++    local reqItem = tonumber(self.choiceData:GetCell(cRow, "req_item")) or 0
++    local itemOk = (self:HasRequiredItem(reqItem) == 1)
++
++    -- Δaff 계산 + 예상 호감도
++    local delta = self:CalcAffDeltaFromChoiceRow(cRow)
++    local expected = self:CalcExpectedAff(delta)
++
++    local curItem = tonumber(self.item) or 0
++    log("[DBG][CHOICE] gid="..tostring(self.currentChoiceGroupId)
++      .." idx="..tostring(idx)
++      .." cRow="..tostring(cRow)
++      .." curAff="..tostring(self.affection)
++      .." delta="..tostring(delta)
++      .." expected="..tostring(expected)
++      .." reqAff="..tostring(reqAff)
++      .." passId="..tostring(passId)
++      .." failId="..tostring(failId)
++      .." reqItem="..tostring(reqItem)
++      .." curItem="..tostring(curItem)
++      .." itemOk="..tostring(itemOk))
++
++    -- 실패도 그냥 이동: expected < reqAff면 failId로 이동
++    local targetId = self:ResolveBranchTarget(expected, reqAff, passId, failId)
++    if itemOk == false then
++      targetId = failId
++    end
++
++    log("[DBG] branch reqAff="..tostring(reqAff)
++      .." passId="..tostring(passId)
++      .." failId="..tostring(failId)
++      .." delta="..tostring(delta)
++      .." expected="..tostring(expected)
++      .." targetId="..tostring(targetId))
++
++    --- choice 테이블에 id 없으면 팝업
++    if targetId <= 0 then
++      log ("분기 스크립트 ID가 비어있습니다.")
++      self.choiceClickLocked = 0
++      self.nextLocked = 0
++      return
++    end
++
++    if self.scriptRowByScriptId == nil or self.scriptRowByScriptId[targetId] == nil then
++      self:ShowChoicePopup("이동 대상 스크립트가 없습니다: " .. tostring(targetId))
++      self.choiceClickLocked = 0
++      self.nextLocked = 0
++      return
++    end
++
++    local passOk = itemOk and (expected >= reqAff)
++    if passOk then
++      targetId = passId
++    else
++      targetId = failId
++    end
++
++    if itemOk == false and reqItem ~= 0 then
++      self.nextLocked = 0
++      return
++    end
++
++    self:ApplyItemFromChoiceRow(cRow)
++    self.affection = expected
++
++    -- UI 닫기 + 이동
++    self:CloseChoiceUI()
++    self.isChoice = 0
++    self:DisableAllFixedCG()
++    self.curCgId = 0
++
++    -- 서버 저장: nextScriptId + newAff(절대값)
++    self:SaveNextScriptAffItem(targetId, self.affection, self.item)
++    self.count = targetId
++    self.choiceClickLocked = 0
++    self.nextLocked = 0
++    self:ShowNextText()
++  end
++
++  @ExecSpace("ClientOnly")
++  method void OnSaveClick()
++    if self.popupLocked == 1 then
++      return
++    end
++
++    if self.nextLocked == 1 then
++      return
++    end
++
++    if self.cgFadeLocked == 1 then
++      return
++    end
++
++    if self.affectionLoaded == 0 then
++      self:ShowChoicePopup("데이터 로딩 중입니다.")
++      return
++    end
++
++    self:SaveUserData(self.count, self.affection, self.item)
++  end
++
++  -- Save/Load
++  @ExecSpace("Server")
++  method void SaveUserData(integer currentId, integer aff, integer item)
++    local uds = _DataStorageService:GetUserDataStorage(senderUserId)
++    local saveCid = (currentId or 1) - 1
++
++    aff = tonumber(aff) or 0
++    if aff < self.MIN_AFF then
++      aff = self.MIN_AFF
++    end
++
++    if aff > self.MAX_AFF then
++      aff = self.MAX_AFF
++    end
++
++    item = self:ClampItem(item)
++
++    local err1 = uds:SetAndWait("cid", tostring(saveCid))
++    local err2 = uds:SetAndWait("aff", tostring(aff))
++    local err3 = uds:SetAndWait("item", tostring(item))
++
++    if err1 ~= 0 or err2 ~= 0 or err3 ~= 0 then
++      log("[ERR] SaveUserData failed errCid="..tostring(err1)
++        .." errAff="..tostring(err2)
++        .." errItem="..tostring(err3))
++      return
++    end
++
++    self:NotifySaveSuccess()
++  end
++
++  @ExecSpace("Client")
++  method void NotifySaveSuccess()
++    --- UI 바인딩 보장(가끔 notify가 먼저 도착할 수 있음)
++    if self.uiPopupSaveRoot == nil or self.uiPopupSaveText == nil then
++      self:BindPopupUI()
++    end
++
++    --- 팝업이 떠있는 중이면 "대기"로 전환 (버리지 않음)
++    if self.popupLocked == 1 then
++      self.pendingSavePopup = 1
++      self.pendingSaveMsg = "저장 완료"
++      return
++    end
++
++    self:ShowSavePopup("저장 완료")
++  end
++
++  @ExecSpace("Server")
++  method void LoadUserData()
++    local uds = _DataStorageService:GetUserDataStorage(senderUserId)
++    local errCid, cidVal = uds:GetAndWait("cid")
++    local errAff, affVal = uds:GetAndWait("aff")
++    local errItem, itemVal = uds:GetAndWait("item")
++
++    local cid = tonumber(cidVal) or 0
++    local aff = tonumber(affVal) or 0
++    aff = math.max(self.MIN_AFF, math.min(self.MAX_AFF, aff))
++
++    local item = tonumber(itemVal) or 0
++    item = math.max(self.MIN_ITEM, math.min(self.MAX_ITEM, item))
++
++    self:NotifyUserStateLoaded(cid, aff, item)
++  end
++
++  method void StartGameWithId(integer id)
++    self:OnVNScenePlay(id)
++  end
++
++  -- Choices
++  method void HookChoicePanelButtons(Entity panel)
++    if panel == nil then
++      return
++    end
++
++    local function Dfs(e)
++      if e == nil then
++        return
++      end
++
++      if e.Name ~= nil and string.find(e.Name, "ChoiceButton") == 1 then
++        e:ConnectEvent(ButtonClickEvent, self.OnChoiceClick)
++      end
++
++      local kids = e.Children
++      if kids ~= nil then
++        for _, c in pairs(kids) do
++          Dfs(c)
++        end
++      end
++    end
++
++    Dfs(panel)
++  end
++
++  -- CG
++  method void InitFixedCGEntities()
++    self.cgEntityById = {}
++    local root = self.uiCGShakeRoot
++    if root == nil then
++      log("[ERR] InitFixedCGEntities: CGShakeRoot nil")
++      return
++    end
++
++    for _, child in pairs(root.Children) do
++      if child ~= nil then
++        local name = child.Name
++        if string.sub(name, 1, 3) == "CG_" then
++          local id = tonumber(string.sub(name, 4))
++          if id ~= nil and id > 0 then
++            self.cgEntityById[id] = child
++            child.Enable = false
++          end
++        end
++      end
++    end
++  end
++
++  method void DisableAllFixedCG()
++    if self.cgEntityById == nil then
++      return
++    end
++
++    for _, e in pairs(self.cgEntityById) do
++      if e ~= nil then
++        e.Enable = false
++      end
++    end
++  end
++
++  method void ApplyCG(number cgId)
++    if self.cgEntityById == nil then
++      log("[ERR] ApplyCG: cgEntityById not initialized")
++      return
++    end
++
++    cgId = tonumber(cgId) or 0
++
++    -- 0 = 유지(아무 것도 안 함)
++    if cgId == 0 then
++      return
++    end
++
++    -- -1 = 숨김(전부 끄기)
++    if cgId == -1 then
++      self:DisableAllFixedCG()
++      self.curCgId = 0
++      return
++    end
++
++    local next = self.cgEntityById[cgId]
++    if next == nil then
++      log("[ERR] ApplyCG: entity not found for cgId=" .. tostring(cgId))
++      return
++    end
++
++    self:DisableAllFixedCG()
++
++    if self.swapDelaySec ~= nil and self.swapDelaySec > 0 then
++      wait(self.swapDelaySec)
++    end
++
++    next.Enable = true
++    self.curCgId = cgId
++  end
++
++  @ExecSpace("ClientOnly")
++  method void ExplosionShakeCG(number mainMag, number mainSec, number afterCount, number afterMag, number afterSec, number intervalSec)
++    if self.shakeLocked == 1 then
++      return
++    end
++
++    self.shakeLocked = 1
++
++    if self.uiTalkPanel ~= nil then
++      self.uiTalkPanel.Enable = false
++    end
++
++    if self.uiChoicePanel ~= nil then
++      self.uiChoicePanel.Enable = false
++    end
++
++    if self.uiSaveButton ~= nil then
++      self.uiSaveButton.Enable = false
++    end
++
++    local target = self.uiCGShakeRoot
++    if target == nil then
++      log("[ERR] CGShakeRoot nil")
++      self.shakeLocked = 0
++      return
++    end
++
++    local t = target.TransformComponent
++    if t == nil then
++      log("[ERR] CGShakeRoot TransformComponent 없음")
++      self.shakeLocked = 0
++      return
++    end
++
++    local function GetPos(tc)
++      return tc.LocalPosition or tc.Position or tc.Translation or tc.LocalTranslation
++    end
++
++    local function SetPos(tc, v)
++      if tc.LocalPosition ~= nil then
++        tc.LocalPosition = v
++      elseif tc.Position ~= nil then
++        tc.Position = v
++      elseif tc.Translation ~= nil then
++        tc.Translation = v
++      elseif tc.LocalTranslation ~= nil then
++        tc.LocalTranslation = v
++      else
++        return false
++      end
++      return true
++    end
++
++    local origin = GetPos(t)
++    if origin == nil then
++      log("[ERR] Transform position property not found (LocalPosition/Position/Translation/LocalTranslation)")
++      self.shakeLocked = 0
++      return
++    end
++
++    local function ShakeOnce(mag, sec)
++      local elapsed = 0
++      while elapsed < sec do
++        local dx = (math.random() * 2 - 1) * mag
++        local dy = (math.random() * 2 - 1) * mag
++        local ok = SetPos(t, origin + Vector3(dx, dy, 0))
++        if not ok then
++          log("[ERR] cannot set transform position")
++          self.shakeLocked = 0
++          return
++        end
++        wait(intervalSec)
++        elapsed = elapsed + intervalSec
++      end
++      SetPos(t, origin)
++    end
++
++    ShakeOnce(mainMag, mainSec)
++    local mag = afterMag
++    for i = 1, afterCount do
++      ShakeOnce(mag, afterSec)
++      mag = mag * 0.75
++      wait(intervalSec * 2)
++    end
++
++    SetPos(t, origin)
++
++    if self.uiTalkPanel ~= nil then
++      self.uiTalkPanel.Enable = true
++    end
++
++    if self.uiSaveButton ~= nil then
++      self.uiSaveButton.Enable = true
++    end
++
++    self.shakeLocked = 0
++
++    if self.isChoice == 1 and self.currentChoiceGroupId ~= nil and self.currentChoiceGroupId > 0 then
++      self:ShowChoice(self.currentChoiceGroupId)
++    end
++  end
++
++  method void CloseChoiceUI()
++    --- 상위 패널 포함 전부 끔(입력 가림 방지)
++    if self.uiChoicePanel ~= nil then
++      self.uiChoicePanel.Enable = false
++      if self.uiChoicePanel.Visible ~= nil then
++        self.uiChoicePanel.Visible = false
++      end
++    end
++
++    if self.uiChoicePanel2 ~= nil then
++      self.uiChoicePanel2.Enable = false
++      if self.uiChoicePanel2.Visible ~= nil then
++        self.uiChoicePanel2.Visible = false
++      end
++    end
++
++    if self.uiChoicePanel3 ~= nil then
++      self.uiChoicePanel3.Enable = false
++      if self.uiChoicePanel3.Visible ~= nil then
++        self.uiChoicePanel3.Visible = false
++      end
++    end
++
++    if self.uiChoicePanel4 ~= nil then
++      self.uiChoicePanel4.Enable = false
++      if self.uiChoicePanel4.Visible ~= nil then
++        self.uiChoicePanel4.Visible = false
++      end
++    end
++  end
++
++  method any GetShakePreset(integer presetId)
++    --- presetId -> {mainMag, mainSec, afterCount, afterMag, afterSec, intervalSec}
++    if presetId == 1 then
++      return {18, 0.18, 4, 10, 0.10, 0.03}
++    elseif presetId == 2 then
++      return {10, 0.12, 3, 6, 0.08, 0.03}
++    elseif presetId == 3 then
++      return {6, 0.10, 2, 4, 0.06, 0.03}
++    end
++    return nil
++  end
++
++  -- Screen FX
++  @ExecSpace("ClientOnly")
++  method void SetCanvasGroupAlpha(Entity e, number a)
++    if e == nil then
++      return
++    end
++
++    local cg = e.CanvasGroupComponent
++    if cg == nil then
++      log("[ERR] CanvasGroupComponent not found on entity=" .. tostring(e))
++      return
++    end
++
++    -- clamp
++    if a == nil then
++      a = 1.0
++    end
++
++    if a < 0 then
++      a = 0
++    end
++
++    if a > 1 then
++      a = 1
++    end
++
++    -- 엔진별 알파 프로퍼티명 방어
++    if cg.GroupAlpha ~= nil then
++      cg.GroupAlpha = a
++      return
++    end
++
++    if cg.Alpha ~= nil then
++      cg.Alpha = a
++      return
++    end
++
++    if cg.alpha ~= nil then
++      cg.alpha = a
++      return
++    end
++
++    log("[ERR] CanvasGroup alpha property not found (GroupAlpha/Alpha/alpha) entity=" .. tostring(e))
++  end
++
++  @ExecSpace("ClientOnly")
++  method void FadeCanvasGroupAlpha(Entity e, number fromA, number toA, number sec, number stepSec)
++    if e == nil then
++      return
++    end
++
++    if sec == nil or sec <= 0 then
++      self:SetCanvasGroupAlpha(e, toA)
++      return
++    end
++
++    if stepSec == nil or stepSec <= 0 then
++      stepSec = 0.03
++    end
++
++    local cg = e.CanvasGroupComponent
++    if cg == nil then
++      log("[ERR] CanvasGroupComponent not found on entity=" .. tostring(e))
++      return
++    end
++
++    self:SetCanvasGroupAlpha(e, fromA)
++    local t = 0
++    while t < sec do
++      local k = t / sec
++      local a = fromA + (toA - fromA) * k
++      self:SetCanvasGroupAlpha(e, a)
++      wait(stepSec)
++      t = t + stepSec
++    end
++    self:SetCanvasGroupAlpha(e, toA)
++  end
++
++  @ExecSpace("ClientOnly")
++  method void SetCGAlpha(number a)
++    local e = self.uiCGCanvasRoot
++    if e == nil then
++      log("[ERR] SetCGAlpha: uiCGCanvasRoot nil")
++      return
++    end
++
++    self:SetCanvasGroupAlpha(e, a)
++  end
++
++  @ExecSpace("ClientOnly")
++  method void FadeCGAlpha(number fromA, number toA, number durationSec)
++    if self.cgFadeLocked == 1 then
++      return
++    end
++
++    self.cgFadeLocked = 1
++    self.nextLocked = 1
++
++    if durationSec == nil or durationSec <= 0 then
++      durationSec = self.cgFadeDurationSec
++    end
++
++    --- clamp
++    if fromA == nil then
++      fromA = 1.0
++    end
++
++    if toA == nil then
++      toA = 1.0
++    end
++
++    if fromA < 0 then
++      fromA = 0
++    end
++
++    if fromA > 1 then
++      fromA = 1
++    end
++
++    if toA < 0 then
++      toA = 0
++    end
++
++    if toA > 1 then
++      toA = 1
++    end
++
++    local step = self.cgFadeStepSec
++    if step == nil or step <= 0 then
++      step = 0.02
++    end
++
++    local t = 0.0
++    self:SetCGAlpha(fromA)
++    while t < durationSec do
++      t = t + step
++      local k = t / durationSec
++      if k > 1 then
++        k = 1
++      end
++      local a = fromA + (toA - fromA) * k
++      self:SetCGAlpha(a)
++      wait(step)
++    end
++
++    self:SetCGAlpha(toA)
++    self.cgFadeLocked = 0
++    self.nextLocked = 0
++  end
++
++  method integer ClampAff(integer v)
++    if v == nil then
++      v = 0
++    end
++
++    if v < self.MIN_AFF then
++      v = self.MIN_AFF
++    end
++
++    if v > self.MAX_AFF then
++      v = self.MAX_AFF
++    end
++
++    return v
++  end
++
++  method void NotifyUserStateLoaded(integer cidStored, integer aff, integer item)
++    self.affection = self:ClampAff(aff)
++    self.item = self:ClampItem(item)
++    self.affectionLoaded = 1
++
++    local startScriptId = (cidStored or 0) + 1
++    if startScriptId < 1 then
++      startScriptId = 1
++    end
++
++    log("[DBG] UserStateLoaded cidStored="..tostring(cidStored)
++      .." startScriptId="..tostring(startScriptId)
++      .." aff="..tostring(self.affection)
++      .." item="..tostring(self.item))
++    self:OnVNScenePlay(startScriptId)
++  end
++
++  method integer CalcAffDeltaFromChoiceRow(integer cRow)
++    if self.choiceData == nil then
++      log("[ERR] CalcAffDeltaFromChoiceRow: choiceData nil")
++      return 0
++    end
++
++    local raw = self.choiceData:GetCell(cRow, "aff_delta")
++    local d = tonumber(raw)
++    if d == nil then
++      -- 빈 값/문자면 0으로
++      d = 0
++    end
++
++    return d
++  end
++
++  method integer CalcExpectedAff(integer delta)
++    local cur = tonumber(self.affection) or 0
++    local d = tonumber(delta) or 0
++    local expected = cur + d
++    return self:ClampAff(expected)
++  end
++
++  method integer ResolveBranchTarget(integer expectedAff, integer reqAff, integer passId, integer failId)
++    local e = tonumber(expectedAff) or 0
++    local r = tonumber(reqAff) or 0
++    local p = tonumber(passId) or 0
++    local f = tonumber(failId) or 0
++
++    if e >= r then
++      return p
++    end
++
++    return f
++  end
++
++  method number Clamp01(number a)
++    if a == nil then
++      return 0
++    end
++
++    if a < 0 then
++      return 0
++    end
++
++    if a > 1 then
++      return 1
++    end
++
++    return a
++  end
++
++  method number EaseOutQuad(number t)
++    if t < 0 then
++      t = 0
++    end
++
++    if t > 1 then
++      t = 1
++    end
++
++    return 1 - (1 - t) * (1 - t)
++  end
++
++  method number EaseInQuad(number t)
++    if t < 0 then
++      t = 0
++    end
++
++    if t > 1 then
++      t = 1
++    end
++
++    return t * t
++  end
++
++  @ExecSpace("ClientOnly")
++  method void FadeAlphaCurve(Entity overlay, number sec, any curve, number stepSec)
++    if overlay == nil then
++      return
++    end
++
++    if sec == nil or sec <= 0 then
++      return
++    end
++
++    if stepSec == nil or stepSec <= 0 then
++      stepSec = 0.02
++    end
++
++    if curve == nil or #curve < 2 then
++      return
++    end
++
++    overlay.Enable = true
++    if overlay.Visible ~= nil then
++      overlay.Visible = true
++    end
++
++    local t = 0
++    local i = 1
++    while t < sec do
++      local u = t / sec
++      while i < (#curve - 1) and u > curve[i + 1][1] do
++        i = i + 1
++      end
++
++      local t0 = curve[i][1]
++      local a0 = curve[i][2]
++      local t1 = curve[i + 1][1]
++      local a1 = curve[i + 1][2]
++      local k = 0
++      if t1 > t0 then
++        k = (u - t0) / (t1 - t0)
++      end
++
++      local a = a0 + (a1 - a0) * k
++      self:SetOverlayAlpha(overlay, self:Clamp01(a))
++      wait(stepSec)
++      t = t + stepSec
++    end
++
++    -- 마지막도 동일 경로로 통일
++    self:SetOverlayAlpha(overlay, self:Clamp01(curve[#curve][2]))
++  end
++
++  method any GetFlashbangCurve()
++    -- time01, alpha01
++    -- 0~0.1: 급점등 / 0.1~0.35: 플리커 / 0.35~1.0: 잔광 감쇠
++    return {
++      {0.00, 0.00},
++      {0.04, 1.00},
++      {0.08, 0.85},
++      {0.12, 0.98},
++      {0.16, 0.80},
++      {0.20, 0.92},
++      {0.26, 0.70},
++      {0.32, 0.78},
++      {0.40, 0.55},
++      {0.55, 0.30},
++      {0.75, 0.12},
++      {1.00, 0.00},
++    }
++  end
++
++  @ExecSpace("ClientOnly")
++  method void DoFlashbangFX(number durationSec, number sfxId)
++    if self.screenFxLocked == 1 then
++      return
++    end
++
++    self.screenFxLocked = 1
++    self.nextLocked = 1
++
++    if self.uiWhiteOverlay == nil then
++      self:BindScreenFXUI()
++    end
++
++    if self.uiWhiteOverlay == nil then
++      log("[ERR] DoFlashbangFX: WhiteOverlay not bound")
++      self.screenFxLocked = 0
++      self.nextLocked = 0
++      return
++    end
++
++    local sec = tonumber(durationSec) or 1.1
++    if sec <= 0 then
++      sec = 1.1
++    end
++
++    -- 렌더 보장(Enable/Visible/부모 체인)
++    self:ForceVisibleChain(self.uiWhiteOverlay, true)
++
++    -- 시작값
++    self:SetCanvasGroupAlpha(self.uiWhiteOverlay, 0)
++
++    -- SFX
++    self:PlaySfxIfAny(sfxId)
++
++    -- 페이드
++    self:FadeAlphaCurve(self.uiWhiteOverlay, sec, self:GetFlashbangCurve(), 0.02)
++
++    -- 종료
++    self:SetCanvasGroupAlpha(self.uiWhiteOverlay, 0)
++    self:ForceVisibleChain(self.uiWhiteOverlay, false)
++    self.screenFxLocked = 0
++    self.nextLocked = 0
++  end
++
++  method any GetBlackoutCurve()
++    -- 급암전 후, 아주 미세하게 알파가 흔들리다가(숨결), 복귀
++    return {
++      {0.00, 0.00},
++      {0.15, 1.00},
++      {0.30, 0.96},
++      {0.45, 1.00},
++      {0.60, 0.97},
++      {0.75, 1.00},
++      {0.90, 0.85},
++      {1.00, 0.00},
++    }
++  end
++
++  @ExecSpace("ClientOnly")
++  method void DoBlackoutTransitionFX(number totalSec, number holdAtBlackSec, number sfxId, number applyBgId, number applyCgId)
++    if self.screenFxLocked == 1 then
++      return
++    end
++
++    self.screenFxLocked = 1
++    self.nextLocked = 1
++
++    -- 바인딩 보장
++    if self.uiBlackSolid == nil and self.uiBlackOverlay == nil then
++      self:BindScreenFXUI()
++    end
++
++    local blk = self.uiBlackSolid or self.uiBlackOverlay
++    if blk == nil then
++      log("[ERR] DoBlackoutTransitionFX: black overlay not bound")
++      self.screenFxLocked = 0
++      self.nextLocked = 0
++      return
++    end
++
++    -- 파라미터 정규화
++    local total = tonumber(totalSec) or 1.0
++    if total <= 0 then
++      total = 1.0
++    end
++
++    local hold = tonumber(holdAtBlackSec) or 0.12
++    if hold < 0 then
++      hold = 0
++    end
++
++    -- 입력 차단(선택지/세이브만)
++    if self.uiSaveButton ~= nil then
++      self.uiSaveButton.Enable = false
++    end
++
++    if self.uiChoicePanel ~= nil then
++      self.uiChoicePanel.Enable = false
++    end
++
++    -- SFX
++    self:PlaySfxIfAny(sfxId)
++
++    -- 렌더 보장 + 시작 알파
++    self:ForceVisibleChain(blk, true)
++    self:SetOverlayAlpha(blk, 0)
++
++    -- 1) 암전 IN
++    local inSec = 0.18
++    self:FadeCanvasGroupAlpha(blk, 0, 1, inSec, 0.02)
++
++    -- 2) 완전 암전 홀드 + 전환 적용
++    wait(hold)
++    self:ApplyBgCg(applyBgId, applyCgId)
++
++    -- 3) OUT (커브)
++    local remain = total - inSec
++    if remain < 0.2 then
++      remain = 0.2
++    end
++
++    self:FadeAlphaCurve(blk, remain, self:GetBlackoutCurve(), 0.02)
++
++    -- 종료
++    self:SetOverlayAlpha(blk, 0)
++    self:ForceVisibleChain(blk, false)
++
++    if self.uiSaveButton ~= nil then
++      self.uiSaveButton.Enable = true
++    end
++
++    self.screenFxLocked = 0
++    self.nextLocked = 0
++  end
++
++  @ExecSpace("ClientOnly")
++  method void BindScreenFXUI()
++    local overlay = _EntityService:GetEntityByPath("/ui/OverlayGroup")
++    if overlay ~= nil then
++      overlay.Enable = true
++    end
++
++    self.uiScreenFXGroup = _EntityService:GetEntityByPath("/ui/OverlayGroup/ScreenFX")
++    self.uiBlackSolid = _EntityService:GetEntityByPath("/ui/OverlayGroup/ScreenFX/BlackSolid")
++    self.uiBlackOverlay = _EntityService:GetEntityByPath("/ui/OverlayGroup/ScreenFX/BlackOverlay")
++    self.uiWhiteOverlay = _EntityService:GetEntityByPath("/ui/OverlayGroup/ScreenFX/WhiteOverlay")
++
++    if self.uiScreenFXGroup ~= nil then
++      self.uiScreenFXGroup.Enable = true
++    end
++
++    -- 전부 초기 OFF + 알파 0
++    if self.uiBlackSolid ~= nil then
++      self.uiBlackSolid.Enable = false
++      self:SetOverlayAlpha(self.uiBlackSolid, 0)
++      self:ForceOverlayOrder(self.uiBlackSolid, 10000)
++    end
++
++    if self.uiBlackOverlay ~= nil then
++      self.uiBlackOverlay.Enable = false
++      self:SetOverlayAlpha(self.uiBlackOverlay, 0)
++      self:ForceOverlayOrder(self.uiBlackOverlay, 10001)
++    end
++
++    if self.uiWhiteOverlay ~= nil then
++      self.uiWhiteOverlay.Enable = false
++      self:SetOverlayAlpha(self.uiWhiteOverlay, 0)
++      self:ForceOverlayOrder(self.uiWhiteOverlay, 10002)
++    end
++
++    log("[DBG] BindScreenFXUI group="..tostring(self.uiScreenFXGroup)
++      .." blackSolid="..tostring(self.uiBlackSolid)
++      .." black="..tostring(self.uiBlackOverlay)
++      .." white="..tostring(self.uiWhiteOverlay))
++
++    if self.uiScreenFXGroup ~= nil and self.uiScreenFXGroup.Visible ~= nil then
++      self.uiScreenFXGroup.Visible = true
++    end
++  end
++
++  @ExecSpace("ClientOnly")
++  method void PlaySfxIfAny(number sfxId)
++    -- 0이면 기능 없음
++    if sfxId == nil then
++      return
++    end
++
++    local sid = tonumber(sfxId) or 0
++    if sid <= 0 then
++      return
++    end
++
++    -- 테이블/맵이 아직 없으면 방어
++    if self.soundData == nil or self.soundRowById == nil then
++      log("[WARN] PlaySfxIfAny blocked: soundData/soundRowById not ready. sfxId="..tostring(sid))
++      return
++    end
++
++    local ruid = self:GetSoundRuidById(sid)
++    if ruid == nil or ruid == "" then
++      log("[WARN] PlaySfxIfAny: empty ruid. sfxId="..tostring(sid))
++      return
++    end
++
++    _SoundService:PlaySound(ruid, 1)
++  end
++
++  method void ClearCGOnMoveScript()
++    self:DisableAllFixedCG()
++    self.curCgId = 0
++    if self.screenFxLocked ~= 1 then
++      self:SetCGAlpha(1.0)
++    end
++  end
++
++  -- Inventory
++  method integer HasRequiredItem(integer reqItem)
++    local req = tonumber(reqItem) or 0
++    if req == 0 then
++      return 1 -- 조건 없음: 통과
++    end
++
++    local cur = tonumber(self.item) or 0
++    if cur == req then
++      return 1 -- 조건 만족
++    end
++
++    return 0 -- 불만족
++  end
++
++  method void ApplyItemFromChoiceRow(integer cRow)
++    if self.choiceData == nil then
++      return
++    end
++
++    local raw = self.choiceData:GetCell(cRow, "item")
++    local give = tonumber(raw) or 0
++    if give == 0 then
++      return -- 변경 없음
++    end
++
++    give = self:ClampItem(give)
++    self.item = give
++    log("[DBG] ApplyItemFromChoiceRow set item="..tostring(self.item))
++  end
++
++  method integer ClampItem(integer v)
++    v = tonumber(v) or 0
++    if v < self.MIN_ITEM then
++      v = self.MIN_ITEM
++    end
++
++    if v > self.MAX_ITEM then
++      v = self.MAX_ITEM
++    end
++
++    return v
++  end
++
++  @ExecSpace("Server")
++  method void SaveNextScriptAffItem(integer nextScriptId, integer newAff, integer item)
++    local uds = _DataStorageService:GetUserDataStorage(senderUserId)
++    local saveCid = (nextScriptId or 1) - 1
++    newAff = tonumber(newAff) or 0
++
++    if newAff < self.MIN_AFF then
++      newAff = self.MIN_AFF
++    end
++
++    if newAff > self.MAX_AFF then
++      newAff = self.MAX_AFF
++    end
++
++    item = self:ClampItem(item)
++
++    local err1 = uds:SetAndWait("aff", tostring(newAff))
++    local err2 = uds:SetAndWait("cid", tostring(saveCid))
++    local err3 = uds:SetAndWait("item", tostring(item))
++
++    if err1 == 0 and err2 == 0 and err3 == 0 then
++      return
++    end
++
++    log("[ERR] SaveNextScriptAffItem failed errAff="..tostring(err1)
++      .." errCid="..tostring(err2)
++      .." errItem="..tostring(err3))
++  end
++
++  -- UI helpers
++  method void ForceOverlayOrder(Entity e, number order)
++    if e == nil then
++      return
++    end
++
++    local r = e.SpriteGUIRendererComponent
++    if r == nil then
++      return
++    end
++
++    if r.OrderInLayer ~= nil then
++      r.OrderInLayer = order
++    end
++  end
++
++  method void SetOverlayAlpha(Entity e, number a)
++    if e == nil then
++      return
++    end
++
++    if a == nil then
++      a = 1
++    end
++
++    if a < 0 then
++      a = 0
++    end
++
++    if a > 1 then
++      a = 1
++    end
++
++    -- 1) CanvasGroup 우선
++    local cg = e.CanvasGroupComponent
++    if cg ~= nil then
++      if cg.GroupAlpha ~= nil then
++        cg.GroupAlpha = a
++        return
++      end
++      if cg.Alpha ~= nil then
++        cg.Alpha = a
++        return
++      end
++      if cg.alpha ~= nil then
++        cg.alpha = a
++        return
++      end
++    end
++
++    -- 2) SpriteGUIRenderer 알파로 폴백 (엔진별 방어)
++    local r = e.SpriteGUIRendererComponent
++    if r ~= nil then
++      if r.Alpha ~= nil then
++        r.Alpha = a
++        return
++      end
++      if r.Opacity ~= nil then
++        r.Opacity = a
++        return
++      end
++      if r.Color ~= nil then
++        local c = r.Color
++        if c.a ~= nil then
++          c.a = a
++          r.Color = c
++          return
++        end
++      end
++    end
++  end
++
++  method void DumpUIEntity(Entity e, string tag)
++    if e == nil then
++      log("[DBG] "..tostring(tag).." = nil")
++      return
++    end
++
++    log("[DBG] "..tostring(tag).." Enable="..tostring(e.Enable)
++      .." Visible="..tostring(e.Visible)
++      .." Parent="..tostring(e.Parent))
++
++    local t = e.TransformComponent
++    if t ~= nil then
++      log("[DBG] "..tostring(tag).." Pos="..tostring(t.LocalPosition or t.Position)
++        .." Scale="..tostring(t.LocalScale or t.Scale))
++    end
++
++    local cg = e.CanvasGroupComponent
++    if cg ~= nil then
++      log("[DBG] "..tostring(tag).." CanvasAlpha(GroupAlpha)="..tostring(cg.GroupAlpha)
++        .." Alpha="..tostring(cg.Alpha)
++        .." alpha="..tostring(cg.alpha))
++    else
++      log("[DBG] "..tostring(tag).." CanvasGroup=nil")
++    end
++  end
++
++  method void ForceVisibleChain(Entity e, boolean on)
++    if e == nil then
++      return
++    end
++
++    -- Parent까지 Enable/Visible을 강제로 복구(부모가 죽어 있으면 자식이 절대 안 보임)
++    local cur = e
++    while cur ~= nil do
++      if cur.Enable ~= nil then
++        cur.Enable = true
++      end
++      if cur.Visible ~= nil then
++        cur.Visible = true
++      end
++      cur = cur.Parent
++    end
++
++    -- 대상 엔티티는 on/off 적용
++    if on ~= nil and on == false then
++      if e.Visible ~= nil then
++        e.Visible = false
++      end
++      if e.Enable ~= nil then
++        e.Enable = false
++      end
++    else
++      if e.Enable ~= nil then
++        e.Enable = true
++      end
++      if e.Visible ~= nil then
++        e.Visible = true
++      end
++    end
++  end
++
++  method void DumpAllFX()
++    self:DumpUIEntity(self.uiScreenFXGroup, "FXGroup")
++    self:DumpUIEntity(self.uiWhiteOverlay, "WhiteOverlay")
++    self:DumpUIEntity(self.uiBlackOverlay, "BlackOverlay")
++    self:DumpUIEntity(self.uiBlackSolid, "BlackSolid")
++  end
++
++  -- Main menu return
++  @ExecSpace("ClientOnly")
++  method void ReturnToMain()
++    -- 1) 런타임 잠금 해제
++    self:ResetRuntimeLocks()
++
++    -- 2) 연출/오버레이 정리
++    self:ResetScreenFX()
++    self:DisableAllFixedCG()
++    self.curCgId = 0
++
++    -- 3) 선택지/대사 UI 정리
++    self.isChoice = 0
++    self.currentChoiceGroupId = 0
++    self.currentChoiceCount = 0
++    self:CloseChoiceUI()
++
++    if self.uiTalkPanel ~= nil then
++      self.uiTalkPanel.Enable = false
++      if self.uiTalkPanel.Visible ~= nil then
++        self.uiTalkPanel.Visible = false
++      end
++    end
++
++    -- 4) 화면 전환: 메인 ON / 게임 UI OFF
++    if self.uiGroup == nil then
++      self.uiGroup = _EntityService:GetEntityByPath("/ui/UIGroup")
++    end
++
++    if self.uiMainGroup == nil then
++      self.uiMainGroup = _EntityService:GetEntityByPath("/ui/MainGroup")
++    end
++
++    if self.uiGroup ~= nil then
++      self.uiGroup.Enable = false
++      if self.uiGroup.Visible ~= nil then
++        self.uiGroup.Visible = false
++      end
++    end
++
++    if self.uiMainGroup ~= nil then
++      self.uiMainGroup.Enable = true
++      if self.uiMainGroup.Visible ~= nil then
++        self.uiMainGroup.Visible = true
++      end
++    end
++
++    self.sceneType = 0
++
++    -- 5) 시작 버튼 이벤트 재바인딩(메인으로 돌아오면 가끔 입력이 죽는 케이스 방어)
++    if self.uiMainGroup ~= nil then
++      local newButton = self.uiMainGroup:GetChildByName("NewButton")
++      local loadButton = self.uiMainGroup:GetChildByName("LoadButton")
++      if newButton ~= nil then
++        newButton:ConnectEvent(ButtonClickEvent, self.OnStartButtonClick)
++      end
++      if loadButton ~= nil then
++        loadButton:ConnectEvent(ButtonClickEvent, self.OnStartButtonClick)
++      end
++    end
++  end
++
++  method void ApplyTalkUI(number characterId, string message)
++    -- message
++    if message == nil or message == "" then
++      if self.uiTalkPanel ~= nil then
++        self.uiTalkPanel.Enable = false
++        if self.uiTalkPanel.Visible ~= nil then
++          self.uiTalkPanel.Visible = false
++        end
++      end
++    else
++      if self.uiTalkPanel ~= nil then
++        self.uiTalkPanel.Enable = true
++        if self.uiTalkPanel.Visible ~= nil then
++          self.uiTalkPanel.Visible = true
++        end
++      end
++
++      if self.uiMessageEntity ~= nil and self.uiMessageEntity.TextComponent ~= nil then
++        self.uiMessageEntity.TextComponent.Text = message
++      end
++    end
++
++    -- speaker
++    if tonumber(characterId) == 0 then
++      if self.uiNameEntity ~= nil then
++        self.uiNameEntity.Enable = false
++      end
++
++      if self.uiNamePanel ~= nil then
++        self.uiNamePanel.Enable = false
++      end
++
++      if self.uiPortraitEntity ~= nil then
++        self.uiPortraitEntity.Enable = false
++      end
++      return
++    end
++
++    local name = self:GetCharacterName(characterId)
++    if self.uiNameEntity ~= nil and self.uiNameEntity.TextComponent ~= nil then
++      self.uiNameEntity.TextComponent.Text = name
++      self.uiNameEntity.Enable = true
++    end
++
++    if self.uiNamePanel ~= nil then
++      self.uiNamePanel.Enable = true
++    end
++
++    local portraitArtId = self:GetCharacterPortraitArtId(characterId)
++    if portraitArtId > 0 and self.uiPortraitEntity ~= nil then
++      local portraitRuid = self:GetArtRuidById(portraitArtId)
++      if portraitRuid ~= "" then
++        self.uiPortraitEntity.SpriteGUIRendererComponent.ImageRUID = portraitRuid
++        self.uiPortraitEntity.Enable = true
++      end
++    end
++  end
++
++  -- Audio
++  method void ApplyBgm(number bgmId)
++    if bgmId == nil then
++      return
++    end
++
++    local id = tonumber(bgmId) or 0
++    if id == 0 then
++      return
++    end
++
++    if id == -1 then
++      self.Entity.SoundComponent:Pause()
++      self.Entity.SoundComponent:Stop()
++      self.curBgmId = 0
++      return
++    end
++
++    if id ~= self.curBgmId then
++      self.Entity.SoundComponent:Pause()
++      self.Entity.SoundComponent:Stop()
++      self.curBgmId = id
++      local bgmRuid = self:GetSoundRuidById(id)
++      if bgmRuid ~= "" then
++        self.Entity.SoundComponent.AudioClipRUID = bgmRuid
++        self.Entity.SoundComponent:Play()
++      end
++    end
++  end
++
++  @ExecSpace("ClientOnly")
++  method void BindMainMenuButtons()
++    if self.uiMainGroup == nil then
++      self.uiMainGroup = _EntityService:GetEntityByPath("/ui/MainGroup")
++    end
++
++    if self.uiMainGroup == nil then
++      log("[ERR] BindMainMenuButtons: MainGroup nil")
++      return
++    end
++
++    local newButton = self.uiMainGroup:GetChildByName("NewButton")
++    local loadButton = self.uiMainGroup:GetChildByName("LoadButton")
++
++    if newButton ~= nil then
++      newButton:ConnectEvent(ButtonClickEvent, self.OnStartButtonClick)
++      if newButton.Enable ~= nil then
++        newButton.Enable = true
++      end
++      if newButton.Visible ~= nil then
++        newButton.Visible = true
++      end
++    else
++      log("[ERR] BindMainMenuButtons: NewButton nil")
++    end
++
++    if loadButton ~= nil then
++      loadButton:ConnectEvent(ButtonClickEvent, self.OnStartButtonClick)
++      if loadButton.Enable ~= nil then
++        loadButton.Enable = true
++      end
++      if loadButton.Visible ~= nil then
++        loadButton.Visible = true
++      end
++    else
++      log("[ERR] BindMainMenuButtons: LoadButton nil")
++    end
++  end
++
++  method void ResetRuntimeLocks()
++    self.shakeLocked = 0
++    self.nextLocked = 0
++    self.popupLocked = 0
++    self.cgFadeLocked = 0
++    self.screenFxLocked = 0
++    self.choiceClickLocked = 0
++  end
++
++  method void ResetScreenFX()
++    if self.uiScreenFXGroup == nil and (self.uiBlackSolid == nil and self.uiBlackOverlay == nil and self.uiWhiteOverlay == nil) then
++      self:BindScreenFXUI()
++    end
++
++    local function Off(e)
++      if e == nil then
++        return
++      end
++      -- Enable/Visible/Alpha 안전하게 초기화
++      if e.Enable ~= nil then
++        e.Enable = false
++      end
++      if e.Visible ~= nil then
++        e.Visible = false
++      end
++      self:SetOverlayAlpha(e, 0)
++    end
++
++    Off(self.uiBlackSolid)
++    Off(self.uiBlackOverlay)
++    Off(self.uiWhiteOverlay)
++  end
++
++  @EventSender("Service", "InputService")
++  handler HandleKeyDownEvent(KeyDownEvent event)
++    if self.shakeLocked == 1 then
++      return
++    end
++
++    if self.nextLocked == 1 then
++      return
++    end
++
++    if self.popupLocked == 1 then
++      return
++    end
++
++    if self.cgFadeLocked == 1 then
++      return
++    end
++
++    local key = event.key
++    if (key == KeyboardKey.Z) and self.sceneType == 1 and self.isChoice == 0 then
++      self:ShowNextText()
++      return
++    end
++
++    if (key == KeyboardKey.S) and self.sceneType == 1 then
++      self:SaveUserData(self.count, self.affection, self.item)
++      return
++    end
++  end
++end
+ 
+EOF
+)
