@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SUNO TRACK HUB</title>
+  <title>SUNO TRACK HUB (Sheets)</title>
   <style>
     :root{
       --bg:#070a12; --panel:#0c1020; --panel2:#0a0e1b;
@@ -12,7 +12,7 @@
       --text:rgba(255,255,255,.92);
       --chip:rgba(255,255,255,.06);
       --accent:#7b5cff; --accent2:#a78bfa;
-      --warn:#f59e0b; --ok:#22c55e;
+      --ok:#22c55e; --warn:#f59e0b;
       --r:16px; --shadow:0 18px 60px rgba(0,0,0,.55);
     }
     *{box-sizing:border-box}
@@ -42,51 +42,30 @@
     .wrap{max-width:1200px; margin:0 auto; padding:22px 16px 70px;}
     .h1{font-size:34px; font-weight:950; letter-spacing:-.6px; margin:14px 0 6px}
     .sub{color:var(--muted); font-size:13px; margin:0 0 18px; line-height:1.6}
-    .grid2{display:grid; grid-template-columns: 1.05fr .95fr; gap:14px; align-items:start;}
-    @media (max-width: 980px){ .grid2{grid-template-columns:1fr;} }
 
-    .card{
+    .topbar{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+    .search{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    input{
       border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(12,16,32,.86), rgba(10,14,27,.92));
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .head{padding:16px 16px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:10px;}
-    .head .title{font-weight:900}
-    .body{padding:16px}
-    .form{display:grid; gap:12px;}
-    .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-    @media (max-width:560px){ .row2{grid-template-columns:1fr;} }
-    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
-    input, textarea{
-      width:100%; border:1px solid var(--line);
       background: rgba(255,255,255,.035); color:var(--text);
       border-radius:12px; padding:11px 12px; outline:none; font-size:14px;
+      width:320px;
     }
-    textarea{min-height:120px; resize:vertical}
-    .btnrow{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-top:6px;}
-    .btn{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      border-radius:12px; padding:10px 12px; cursor:pointer; font-weight:800; font-size:13px;
-      color:var(--text);
-    }
-    .btn.accent{background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18));
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));}
-    .btn.ok{background:linear-gradient(135deg, rgba(34,197,94,.18), rgba(34,197,94,.06));
-      border-color: color-mix(in srgb, var(--ok) 45%, var(--line));}
-    .btn.warn{background:linear-gradient(135deg, rgba(245,158,11,.16), rgba(245,158,11,.05));
-      border-color: color-mix(in srgb, var(--warn) 45%, var(--line));}
-    .hint{color:var(--muted); font-size:12px; line-height:1.55}
+    @media (max-width:560px){ input{width:100%} }
 
-    .pCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(10,14,27,.88), rgba(12,16,32,.88));
-      border-radius: var(--r); overflow:hidden; box-shadow: var(--shadow);}
-    .pThumb{aspect-ratio:16/9; background:rgba(255,255,255,.03); position:relative;}
-    .pThumb img{width:100%; height:100%; object-fit:cover; display:block;}
-    .pThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 55%, rgba(0,0,0,.55) 100%);}
-    .pBody{padding:14px 14px 16px; display:grid; gap:8px}
-    .pTitle{font-size:20px; font-weight:950; letter-spacing:-.3px; margin:0}
+    .note{color:var(--muted); font-size:12px; line-height:1.55}
+    .sep{height:1px; background:var(--line); margin:12px 0;}
+
+    .gridCards{margin-top:12px; display:grid; grid-template-columns: repeat(4,1fr); gap:12px;}
+    @media (max-width:1180px){ .gridCards{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width:900px){ .gridCards{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
+
+    .tCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90)); border-radius:var(--r); overflow:hidden; box-shadow: var(--shadow);}
+    .tThumb{aspect-ratio:16/9; background:rgba(255,255,255,.03); position:relative;}
+    .tThumb img{width:100%; height:100%; object-fit:cover; display:block;}
+    .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.52))}
+    .tBody{padding:12px 12px 14px; display:grid; gap:7px}
     .badge{
       display:inline-flex; align-items:center; gap:6px;
       font-size:11px; font-weight:900; letter-spacing:.08em;
@@ -95,198 +74,71 @@
       width:fit-content;
     }
     .badge.ok{border-color: color-mix(in srgb, var(--ok) 45%, var(--line));}
-    .badge.warn{border-color: color-mix(in srgb, var(--warn) 45%, var(--line));}
-    .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
-    .chip{font-size:12px; padding:6px 9px; border-radius:999px; background:var(--chip); border:1px solid var(--line); color: color-mix(in srgb, var(--text) 86%, var(--muted));}
-
-    .listTop{margin-top:18px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;}
-    .search{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-    .search input{width:320px}
-    @media (max-width:560px){ .search input{width:100%} }
-    .gridCards{margin-top:12px; display:grid; grid-template-columns: repeat(4,1fr); gap:12px;}
-    @media (max-width:1180px){ .gridCards{grid-template-columns:repeat(3,1fr)} }
-    @media (max-width:900px){ .gridCards{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
-
-    .tCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90)); border-radius:var(--r); overflow:hidden;}
-    .tThumb{aspect-ratio:16/9; background:rgba(255,255,255,.03); position:relative;}
-    .tThumb img{width:100%; height:100%; object-fit:cover; display:block;}
-    .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.52))}
-    .tBody{padding:12px 12px 14px; display:grid; gap:7px}
     .tTitle{font-weight:950; letter-spacing:-.2px; font-size:14px; margin:0}
     .tMeta{color:var(--muted); font-size:12px; display:flex; gap:8px; flex-wrap:wrap}
-    .tDesc{color: color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:12.5px; line-height:1.45; margin:0}
-    .tBtns{display:flex; gap:8px; margin-top:4px}
-    .tBtns .btn{flex:1; padding:9px 10px}
-    .fold{border:1px dashed var(--line); background:rgba(255,255,255,.02); border-radius:12px; padding:10px; color:var(--muted); font-size:12px; line-height:1.5}
-    .note{margin-top:10px; color:var(--muted); font-size:12px}
-    .sep{height:1px; background:var(--line); margin:12px 0;}
+    .tDesc{color: color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:12.5px; line-height:1.45; margin:0; white-space:pre-wrap;}
+    .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
+    .chip{font-size:12px; padding:6px 9px; border-radius:999px; background:var(--chip); border:1px solid var(--line); color: color-mix(in srgb, var(--text) 86%, var(--muted));}
+    .btns{display:flex; gap:8px; margin-top:4px}
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:12px; padding:9px 10px; cursor:pointer; font-weight:800; font-size:13px;
+      color:var(--text);
+      flex:1;
+    }
+    .btn.accent{background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18));
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));}
+    .btn.small{flex:0 0 auto; padding:9px 12px}
+    .error{
+      border:1px solid color-mix(in srgb, #ff4d4d 45%, var(--line));
+      background:rgba(255,77,77,.08);
+      border-radius:12px; padding:12px; color:color-mix(in srgb, #ffd0d0 88%, var(--muted));
+      margin-top:12px;
+    }
   </style>
 </head>
 <body>
-
 <header>
   <div class="nav">
     <div class="brand"><span class="dot"></span> SUNO TRACK HUB</div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button class="pill accent" id="btnLogin">LOGIN</button>
-      <button class="pill" id="btnLogout" style="display:none;">LOGOUT</button>
-      <span class="note" id="who"></span>
+      <button class="pill" id="btnReload">RELOAD</button>
+      <a class="pill accent" href="https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/edit?usp=sharing" target="_blank" rel="noopener noreferrer">OPEN SHEET</a>
     </div>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="h1">NEW TRACK</div>
+  <div class="h1">GAMES</div>
   <p class="sub">
-    • 업로드: <b>로그인</b> 필요 (제출 시 <b>pending</b>)<br/>
-    • 공개 목록: <b>approved + on_hold</b>만 표시 (on_hold는 사유 UI 표시)
+    Google Sheets(CSV)에서 자동으로 읽어와 렌더합니다.<br/>
+    정렬: <b>최신순(시트 행 역순)</b> · 클릭: <b>새 탭</b>
   </p>
 
-  <div class="grid2">
-    <!-- Form -->
-    <div class="card">
-      <div class="head">
-        <div class="title">TRACK INFO</div>
-        <div class="hint">필수: 제목, 링크</div>
-      </div>
-      <div class="body">
-        <div class="form">
-          <div class="row2">
-            <div>
-              <label>TITLE (필수)</label>
-              <input id="fTitle" placeholder="곡 제목" />
-            </div>
-            <div>
-              <label>GENRE (직접 입력)</label>
-              <input id="fGenre" placeholder="CHOIR / ROCK / ..." />
-            </div>
-          </div>
-
-          <div class="row2">
-            <div>
-              <label>CREATOR</label>
-              <input id="fCreator" placeholder="기본: Google 이름" />
-            </div>
-            <div>
-              <label>DATE (YYYY-MM-DD)</label>
-              <input id="fDate" placeholder="2026-01-29" />
-            </div>
-          </div>
-
-          <div>
-            <label>TRACK LINK (URL, 필수)</label>
-            <input id="fUrl" placeholder="https://suno.com/..." />
-          </div>
-
-          <div>
-            <label>COVER IMAGE URL (선택)</label>
-            <input id="fThumb" placeholder="https://..." />
-          </div>
-
-          <div>
-            <label>DESCRIPTION</label>
-            <textarea id="fDesc" placeholder="곡 소개/분위기/레퍼런스"></textarea>
-          </div>
-
-          <div>
-            <label>TAGS (comma separated → 배열로 저장)</label>
-            <input id="fTags" placeholder="합창, 어두움, 가상어" />
-          </div>
-
-          <div class="btnrow">
-            <button class="btn" id="btnClear">CLEAR</button>
-            <button class="btn ok" id="btnSubmit" disabled>SUBMIT (PENDING)</button>
-          </div>
-
-          <div class="hint" id="submitHint">로그인하면 제출 버튼이 활성화됩니다.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview -->
-    <div style="display:grid; gap:12px;">
-      <div class="card">
-        <div class="head">
-          <div class="title">LIVE PREVIEW</div>
-          <div class="hint">카드 미리보기</div>
-        </div>
-        <div class="body">
-          <div class="pCard">
-            <div class="pThumb"><img id="pImg" alt="cover" /></div>
-            <div class="pBody">
-              <div class="badge" id="pBadge">PENDING</div>
-              <h3 class="pTitle" id="pTitle">Untitled Track</h3>
-              <div class="hint" id="pMeta">—</div>
-              <div class="chips" id="pChips"></div>
-              <div class="hint" id="pDesc">설명이 여기에 표시됩니다.</div>
-            </div>
-          </div>
-          <div class="note">썸네일은 URL만. on_hold는 사유가 공개됩니다.</div>
-        </div>
-      </div>
-
-      <!-- Admin panel (only for admin) -->
-      <div class="card" id="adminCard" style="display:none;">
-        <div class="head">
-          <div class="title">ADMIN PANEL</div>
-          <div class="hint">pending → approve / hold</div>
-        </div>
-        <div class="body">
-          <div class="hint" style="margin-bottom:10px;">
-            • pending 목록은 관리자만 조회/처리<br/>
-            • Hold는 <b>사유 입력</b> 후 on_hold로 전환
-          </div>
-          <div class="btnrow" style="justify-content:flex-start;">
-            <button class="btn accent" id="btnAdminReload">RELOAD PENDING</button>
-          </div>
-          <div class="sep"></div>
-          <div id="pendingList" class="hint">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Public list -->
-  <div class="listTop">
-    <div class="hint"><b>PUBLIC LIST</b> (approved + on_hold)</div>
+  <div class="topbar">
     <div class="search">
-      <input id="q" placeholder="검색: 제목/설명/태그/장르" />
-      <button class="btn accent" id="btnReload">RELOAD</button>
+      <input id="q" placeholder="검색: 제목/설명/장르" />
+      <button class="pill" id="btnClear">CLEAR</button>
     </div>
+    <div class="note" id="count">—</div>
   </div>
 
-  <div class="note" id="count"></div>
+  <div class="sep"></div>
+
+  <div id="err" class="error" style="display:none;"></div>
   <div id="cards" class="gridCards"></div>
   <div id="empty" class="note" style="display:none;">표시할 곡이 없습니다.</div>
 </div>
 
-<script type="module">
-  // ===== 0) firebaseConfig 채우기 =====
-const firebaseConfig = {
-  apiKey: "AIzaSyAEXPvhs-QUqvm7UgyYCiavHWodfaFZ6rg",
-  authDomain: "database-tutorial-a0b23.firebaseapp.com",
-  projectId: "database-tutorial-a0b23",
-  storageBucket: "database-tutorial-a0b23.firebasestorage.app",
-  messagingSenderId: "214909835438",
-  appId: "1:214909835438:web:8362229208660ecae0b53f",
-  measurementId: "G-QC2ZLG58R6"
-};
-  // Firebase JS SDK (CDN, v12.8.0)
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-  import {
-    getFirestore, collection, addDoc, serverTimestamp,
-    query, where, orderBy, limit, getDocs,
-    doc, getDoc, updateDoc
-  } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+<script>
+  // ✅ 네가 준 CSV URL
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqbfKg_X9gd_OJeMhGo2BMslOt2y2QoMxY8mfAUHW5Jnf4Yi122-GA2owuBtpk4obaFR1jTXvzrwF0/pub?gid=745673070&single=true&output=csv";
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
+  // 컬럼 매핑 (A~F): 타임스탬프, 제목, URL, 설명, 썸네일URL, 장르
+  const COL = { ts:0, title:1, url:2, desc:3, thumb:4, genre:5 };
 
-  const $ = (id) => document.getElementById(id);
+  const $ = (id)=>document.getElementById(id);
   const esc = (s) => (s ?? "").toString()
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 
@@ -304,192 +156,86 @@ const firebaseConfig = {
     return `data:image/svg+xml;charset=utf-8,${svg}`;
   }
 
-  function today(){
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${y}-${m}-${dd}`;
-  }
+  // Robust-ish CSV parser (handles quotes + commas)
+  function parseCSV(text){
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
 
-  function parseTags(raw){
-    // 자유입력 → 정제(트림/중복제거/길이 제한)
-    const arr = (raw||"").split(",").map(s=>s.trim()).filter(Boolean);
-    const uniq = [];
-    const seen = new Set();
-    for (const t of arr){
-      const k = t.toLowerCase();
-      if (seen.has(k)) continue;
-      seen.add(k);
-      uniq.push(t.slice(0,40));
-      if (uniq.length >= 40) break;
-    }
-    return uniq;
-  }
+    for (let i=0; i<text.length; i++){
+      const c = text[i];
+      const n = text[i+1];
 
-  function draft(){
-    return {
-      title: $("fTitle").value.trim(),
-      genre: $("fGenre").value.trim(),
-      creator: $("fCreator").value.trim(),
-      date: $("fDate").value.trim(),
-      url: $("fUrl").value.trim(),
-      thumb: $("fThumb").value.trim(),
-      desc: $("fDesc").value.trim(),
-      tags: parseTags($("fTags").value),
-    };
-  }
-
-  function setPreview(d){
-    $("pTitle").textContent = d.title || "Untitled Track";
-    const meta = [
-      d.genre ? `genre: ${d.genre}` : "genre: —",
-      d.date ? `date: ${d.date}` : "date: —",
-      d.creator ? `by ${d.creator}` : "by —",
-    ].join(" • ");
-    $("pMeta").textContent = meta;
-    $("pDesc").textContent = d.desc || "설명이 여기에 표시됩니다.";
-    $("pChips").innerHTML = (d.tags||[]).slice(0,10).map(t=>`<span class="chip">${esc(t)}</span>`).join("");
-    $("pImg").src = d.thumb || placeholder();
-    $("pBadge").textContent = "PENDING";
-    $("pBadge").className = "badge";
-  }
-
-  function validate(d){
-    if (!d.title) return "제목은 필수입니다.";
-    if (!d.url) return "링크(URL)는 필수입니다.";
-    if (!/^https?:\/\//i.test(d.url)) return "링크는 http(s)로 시작해야 합니다.";
-    if (d.thumb && !/^https?:\/\//i.test(d.thumb)) return "썸네일 URL은 http(s)로 시작해야 합니다.";
-    if (d.title.length > 120) return "제목이 너무 깁니다(120자 이내).";
-    return "";
-  }
-
-  // ===== Auth + admin check =====
-  let isAdmin = false;
-
-  async function checkAdmin(user){
-    if(!user) return false;
-    // rules에서 admins/{uid} read를 "본인만" 허용했어야 동작
-    const snap = await getDoc(doc(db, "admins", user.uid));
-    return snap.exists();
-  }
-
-  $("btnLogin").addEventListener("click", async ()=> { await signInWithPopup(auth, provider); });
-  $("btnLogout").addEventListener("click", async ()=> { await signOut(auth); });
-
-  onAuthStateChanged(auth, async (user)=>{
-    if(user){
-      $("btnLogin").style.display="none";
-      $("btnLogout").style.display="inline-flex";
-      $("btnSubmit").disabled=false;
-      $("submitHint").textContent = "제출하면 pending으로 저장됩니다(승인/보류 후 공개).";
-      $("who").textContent = user.displayName ? `Logged in: ${user.displayName}` : "Logged in";
-      if(!$("fCreator").value.trim()) $("fCreator").value = user.displayName || "";
-
-      try{
-        isAdmin = await checkAdmin(user);
-      }catch{
-        isAdmin = false;
+      if (inQuotes){
+        if (c === '"' && n === '"'){ cur += '"'; i++; continue; }
+        if (c === '"'){ inQuotes = false; continue; }
+        cur += c;
+        continue;
       }
-      $("adminCard").style.display = isAdmin ? "block" : "none";
-    }else{
-      $("btnLogin").style.display="inline-flex";
-      $("btnLogout").style.display="none";
-      $("btnSubmit").disabled=true;
-      $("submitHint").textContent = "로그인하면 제출 버튼이 활성화됩니다.";
-      $("who").textContent = "";
-      isAdmin = false;
-      $("adminCard").style.display = "none";
+
+      if (c === '"'){ inQuotes = true; continue; }
+      if (c === ','){ row.push(cur); cur=""; continue; }
+
+      // \r\n or \n
+      if (c === '\n' || c === '\r'){
+        if (c === '\r' && n === '\n') i++;
+        row.push(cur); cur="";
+        // skip empty last line
+        if (row.length > 1 || (row.length === 1 && row[0].trim() !== "")) rows.push(row);
+        row = [];
+        continue;
+      }
+
+      cur += c;
     }
-  });
 
-  // ===== Submit =====
-  $("btnSubmit").addEventListener("click", async ()=>{
-    const user = auth.currentUser;
-    if(!user) return alert("로그인이 필요합니다.");
-
-    const d = draft();
-    if(!d.creator) d.creator = user.displayName || "unknown";
-
-    const err = validate(d);
-    if(err) return alert(err);
-
-    try{
-      await addDoc(collection(db, "tracks"), {
-        ...d,
-        status: "pending",
-        holdReason: "",
-        uid: user.uid,
-        createdAt: serverTimestamp(),
-      });
-      alert("제출 완료 (pending). 관리자가 승인/보류하면 공개 목록에 뜹니다.");
-      $("btnClear").click();
-    }catch(e){
-      alert("제출 실패: " + (e?.message || e));
+    // last cell
+    if (cur.length || row.length){
+      row.push(cur);
+      if (row.length > 1 || (row.length === 1 && row[0].trim() !== "")) rows.push(row);
     }
-  });
-
-  // ===== Clear + preview binding =====
-  $("btnClear").addEventListener("click", ()=>{
-    $("fTitle").value="";
-    $("fGenre").value="";
-    $("fDate").value=today();
-    $("fUrl").value="";
-    $("fThumb").value="";
-    $("fDesc").value="";
-    $("fTags").value="";
-    setPreview(draft());
-  });
-
-  ["fTitle","fGenre","fCreator","fDate","fUrl","fThumb","fDesc","fTags"].forEach(id=>{
-    $(id).addEventListener("input", ()=> setPreview(draft()));
-  });
-
-  // ===== Public list (approved + on_hold) =====
-  let publicTracks = [];
+    return rows;
+  }
 
   function norm(s){ return (s||"").toString().toLowerCase().trim(); }
-  function matches(t, q){
-    if(!q) return true;
-    const hay = [
-      t.title, t.desc, t.genre, t.creator, (t.tags||[]).join(" "),
-      t.status === "on_hold" ? (t.holdReason||"") : ""
-    ].map(norm).join(" | ");
-    return hay.includes(norm(q));
-  }
 
-  function tsToMs(v){
-    if(!v) return 0;
-    // Firestore Timestamp has toMillis()
-    if(typeof v.toMillis === "function") return v.toMillis();
-    return 0;
-  }
+  let tracks = [];
 
-  function sortByCreatedAtDesc(list){
-    return [...list].sort((a,b)=> tsToMs(b.createdAt) - tsToMs(a.createdAt));
-  }
+  function mapRowsToTracks(rows){
+    // 첫 줄은 헤더로 가정하고 제거
+    const body = rows.slice(1);
 
-  function trackBadge(t){
-    if(t.status === "approved") return `<span class="badge ok">APPROVED</span>`;
-    if(t.status === "on_hold") return `<span class="badge warn">ON_HOLD</span>`;
-    return `<span class="badge">PENDING</span>`;
+    // 최신순 = 시트에 신규 응답이 아래로 쌓이므로 역순 렌더(타임스탬프 파싱 실패 회피)
+    const latestFirst = body.reverse();
+
+    const out = [];
+    for (const r of latestFirst){
+      const title = (r[COL.title] || "").trim();
+      const url = (r[COL.url] || "").trim();
+      if (!title || !url) continue;
+
+      out.push({
+        ts: (r[COL.ts] || "").trim(),
+        title,
+        url,
+        desc: (r[COL.desc] || "").trim(),
+        thumb: (r[COL.thumb] || "").trim(),
+        genre: (r[COL.genre] || "").trim(),
+      });
+    }
+    return out;
   }
 
   function cardHtml(t){
-    const img = t.thumb || placeholder();
-    const tags = (t.tags||[]).slice(0,6).map(x=>`<span class="chip">${esc(x)}</span>`).join("");
+    const img = (t.thumb && /^https?:\/\//i.test(t.thumb)) ? t.thumb : placeholder();
+    const badge = `<span class="badge ok">LIVE</span>`;
     const meta = [
-      t.genre ? esc(t.genre) : "—",
-      t.date ? esc(t.date) : "—",
-      t.creator ? `by ${esc(t.creator)}` : "by —"
-    ].join(" • ");
+      t.genre ? `genre: ${esc(t.genre)}` : "genre: —",
+      t.ts ? `ts: ${esc(t.ts)}` : ""
+    ].filter(Boolean).join(" • ");
 
-    const holdBlock = (t.status === "on_hold")
-      ? `
-        <div class="fold" style="display:none" data-hold="${esc(t.id)}">${esc(t.holdReason || "사유 없음")}</div>
-        <button class="btn warn" data-toggle-hold="${esc(t.id)}">사유 보기</button>
-      `
-      : ``;
+    const chips = t.genre ? `<span class="chip">${esc(t.genre)}</span>` : "";
 
     return `
       <article class="tCard">
@@ -497,156 +243,79 @@ const firebaseConfig = {
           <div class="tThumb"><img alt="cover" src="${esc(img)}"/></div>
         </a>
         <div class="tBody">
-          ${trackBadge(t)}
+          ${badge}
           <p class="tTitle">${esc(t.title)}</p>
           <div class="tMeta">${meta}</div>
           <p class="tDesc">${esc(t.desc||"")}</p>
-          <div class="chips">${tags}</div>
-          <div class="tBtns">
-            <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">
+          <div class="chips">${chips}</div>
+          <div class="btns">
+            <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer" style="flex:1;">
               <button class="btn accent" style="width:100%">OPEN</button>
             </a>
-            <button class="btn" data-copy="${esc(t.url)}">COPY</button>
+            <button class="btn small" data-copy="${esc(t.url)}">COPY</button>
           </div>
-          ${holdBlock}
         </div>
       </article>
     `;
   }
 
-  function wireCopyAndHold(){
+  function wireCopy(){
     document.querySelectorAll("[data-copy]").forEach(btn=>{
       btn.addEventListener("click", async ()=>{
         const url = btn.getAttribute("data-copy") || "";
         try{
           await navigator.clipboard.writeText(url);
-          btn.textContent="COPIED";
-          setTimeout(()=>btn.textContent="COPY", 900);
+          const old = btn.textContent;
+          btn.textContent = "COPIED";
+          setTimeout(()=>btn.textContent = old, 900);
         }catch{
           prompt("복사할 링크:", url);
         }
       }, { once:true });
     });
+  }
 
-    document.querySelectorAll("[data-toggle-hold]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const id = btn.getAttribute("data-toggle-hold");
-        const box = document.querySelector(`[data-hold="${CSS.escape(id)}"]`);
-        if(!box) return;
-        const opened = box.style.display !== "none";
-        box.style.display = opened ? "none" : "block";
-        btn.textContent = opened ? "사유 보기" : "사유 닫기";
-      }, { once:false });
+  function render(){
+    const q = norm($("q").value);
+    const list = tracks.filter(t=>{
+      const hay = norm([t.title, t.desc, t.genre].join(" | "));
+      return !q || hay.includes(q);
     });
-  }
 
-  async function loadPublic(){
-    // 두 번 조회 후 merge (인덱스 요구를 단순화)
-    const qApproved = query(collection(db, "tracks"), where("status","==","approved"), orderBy("createdAt","desc"), limit(200));
-    const qHold = query(collection(db, "tracks"), where("status","==","on_hold"), orderBy("createdAt","desc"), limit(200));
-
-    const [sa, sh] = await Promise.all([getDocs(qApproved), getDocs(qHold)]);
-    const a = sa.docs.map(d => ({ id: d.id, ...d.data() }));
-    const h = sh.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    publicTracks = sortByCreatedAtDesc([...a, ...h]);
-    renderPublic();
-  }
-
-  function renderPublic(){
-    const qv = $("q").value.trim();
-    const list = publicTracks.filter(t => matches(t, qv));
     $("count").textContent = `표시: ${list.length}`;
     $("cards").innerHTML = list.map(cardHtml).join("");
     $("empty").style.display = list.length ? "none" : "block";
-    wireCopyAndHold();
+    wireCopy();
   }
 
-  $("q").addEventListener("input", renderPublic);
-  $("btnReload").addEventListener("click", ()=> loadPublic().catch(e=>alert("로드 실패: "+(e?.message||e))));
+  async function load(){
+    $("err").style.display="none";
+    $("err").textContent="";
+    $("count").textContent="로딩 중…";
+    $("cards").innerHTML="";
+    $("empty").style.display="none";
 
-  // ===== Admin panel: pending list + approve/hold =====
-  function pendingItemHtml(t){
-    const when = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleString() : "—";
-    const title = esc(t.title || "(no title)");
-    const creator = esc(t.creator || "-");
-    const url = esc(t.url || "");
-    const genre = esc(t.genre || "");
-    const tags = esc((t.tags||[]).join(", "));
+    try{
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) throw new Error("CSV rows are empty (publish 상태/탭 선택 확인 필요).");
 
-    return `
-      <div class="fold" style="border-style:solid; background:rgba(255,255,255,.03);">
-        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:950; color:rgba(255,255,255,.9)">${title}</div>
-            <div style="margin-top:4px;">${creator} • ${when}</div>
-            <div style="margin-top:6px;">${genre ? "genre: " + genre + "<br/>" : ""}${tags ? "tags: " + tags + "<br/>" : ""}</div>
-            <div style="margin-top:6px;"><a href="${url}" target="_blank" rel="noopener noreferrer"><button class="btn accent">OPEN</button></a></div>
-          </div>
-          <div style="min-width:260px; flex:1;">
-            <label style="margin:0 0 6px; display:block;">보류 사유(자유 입력)</label>
-            <input data-hold-reason="${esc(t.id)}" placeholder="예: 검수 중 / 메타데이터 보완 필요" />
-            <div style="display:flex; gap:8px; margin-top:8px;">
-              <button class="btn ok" data-approve="${esc(t.id)}" style="flex:1;">APPROVE</button>
-              <button class="btn warn" data-hold="${esc(t.id)}" style="flex:1;">HOLD</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+      tracks = mapRowsToTracks(rows);
+      render();
+    }catch(e){
+      $("count").textContent="—";
+      $("err").style.display="block";
+      $("err").textContent = "로드 실패: " + (e?.message || e);
+    }
   }
 
-  async function loadPending(){
-    if(!isAdmin) return;
-    const qPending = query(collection(db, "tracks"), where("status","==","pending"), orderBy("createdAt","desc"), limit(200));
-    const snap = await getDocs(qPending);
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  $("q").addEventListener("input", render);
+  $("btnReload").addEventListener("click", load);
+  $("btnClear").addEventListener("click", ()=>{ $("q").value=""; render(); });
 
-    $("pendingList").innerHTML = list.length
-      ? list.map(pendingItemHtml).join("")
-      : `<div class="hint">pending 없음</div>`;
-
-    // wire
-    document.querySelectorAll("[data-approve]").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const id = btn.getAttribute("data-approve");
-        try{
-          await updateDoc(doc(db,"tracks",id), { status:"approved", holdReason:"" });
-          btn.textContent="DONE";
-          await loadPending();
-          await loadPublic();
-        }catch(e){
-          alert("approve 실패: " + (e?.message||e));
-        }
-      }, { once:true });
-    });
-
-    document.querySelectorAll("[data-hold]").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const id = btn.getAttribute("data-hold");
-        const input = document.querySelector(`[data-hold-reason="${CSS.escape(id)}"]`);
-        const reason = (input?.value || "").trim();
-        if(!reason) return alert("보류 사유를 입력하세요.");
-
-        try{
-          await updateDoc(doc(db,"tracks",id), { status:"on_hold", holdReason: reason.slice(0, 600) });
-          btn.textContent="DONE";
-          await loadPending();
-          await loadPublic();
-        }catch(e){
-          alert("hold 실패: " + (e?.message||e));
-        }
-      }, { once:true });
-    });
-  }
-
-  $("btnAdminReload").addEventListener("click", ()=> loadPending().catch(e=>alert("pending 로드 실패: "+(e?.message||e))));
-
-  // Boot
-  $("fDate").value = today();
-  setPreview(draft());
-  loadPublic().catch(e=>console.warn(e));
+  load();
 </script>
-
 </body>
 </html>
