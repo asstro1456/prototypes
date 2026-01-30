@@ -114,6 +114,36 @@
     #count { display:none !important; }
     html, body { height: 100%; }
 .wrap { min-height: 100vh; }
+      /* ===== embed(iframe) 프리뷰 전용 컴팩트 모드 ===== */
+.embed header{ position: static; }                  /* sticky 제거(프리뷰에서 UI 가림 방지) */
+.embed .nav{ padding:10px 12px; }
+.embed .wrap{ max-width: 100%; padding: 12px 12px 18px; }
+.embed .h1{ font-size: 22px; margin: 10px 0 4px; }
+.embed .sub{ font-size: 12px; margin-bottom: 10px; }
+
+.embed input{ width: min(260px, 100%); }
+.embed .topbar{ gap: 8px; }
+
+.embed .gridCards{
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+/* 핵심: 썸네일이 프리뷰를 잡아먹는 문제 해결 */
+.embed .tThumb{ aspect-ratio: 16/9; }
+.embed .tThumb img{ object-fit: cover; }
+
+/* 카드 밀도 올리기 */
+.embed .tBody{ padding: 10px; gap: 6px; }
+.embed .badge{ font-size: 10px; padding: 5px 8px; }
+.embed .tTitle{ font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* 프리뷰에선 설명은 과감히 숨김(원하면 1~2줄로 clamp 가능) */
+.embed .tDesc{ display:none; }
+
+.embed .btn{ padding: 8px 9px; font-size: 12px; border-radius: 10px; }
+.embed .btn.small{ min-width: 84px; }
+
   </style>
 </head>
 <body>
@@ -153,6 +183,7 @@
 
 <script>
   // ✅ 너 시트 ID 기반 + gid 고정
+  document.documentElement.classList.toggle('embed', window.self !== window.top);
   const GVIZ_URL =
     "https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/gviz/tq?gid=745673070&tqx=out:json";
 
