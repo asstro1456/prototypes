@@ -49,12 +49,17 @@
       border:1px solid var(--line);
       background: rgba(255,255,255,.035); color:var(--text);
       border-radius:12px; padding:11px 12px; outline:none; font-size:14px;
-      width:320px;
+      width: min(360px, 100%);
     }
     @media (max-width:560px){ input{width:100%} }
     .note{color:var(--muted); font-size:12px; line-height:1.55}
     .sep{height:1px; background:var(--line); margin:12px 0;}
-    .gridCards{margin-top:12px; display:grid; grid-template-columns: repeat(4,1fr); gap:12px;}
+.gridCards{
+  margin-top:12px;
+  display:grid;
+  gap:12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
     @media (max-width:1180px){ .gridCards{grid-template-columns:repeat(3,1fr)} }
     @media (max-width:900px){ .gridCards{grid-template-columns:repeat(2,1fr)} }
     @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
@@ -97,6 +102,8 @@
     }
     /* 표시 카운트 숨김 */
     #count { display:none !important; }
+    html, body { height: 100%; }
+.wrap { min-height: 100vh; }
   </style>
 </head>
 <body>
