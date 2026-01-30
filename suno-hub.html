@@ -281,7 +281,9 @@ btn.textContent = "복사됨";
   $("q").addEventListener("input", render);
   $("btnReload").addEventListener("click", load);
   $("btnClear").addEventListener("click", ()=>{ $("q").value=""; render(); });
-  load();
+  load()
+#count { display: none !important; }
+;
 </script>
 </body>
 </html>
