@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI SONGS</title>
+
   <style>
     :root{
       --bg:#070a12; --panel:#0c1020; --panel2:#0a0e1b;
@@ -15,6 +16,7 @@
       --r:16px; --shadow:0 18px 60px rgba(0,0,0,.55);
     }
     *{box-sizing:border-box}
+    html, body{height:100%}
     body{
       margin:0; color:var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", sans-serif;
@@ -23,15 +25,24 @@
                   linear-gradient(180deg, #060812, #05060c);
     }
     a{color:inherit; text-decoration:none}
+
     header{
       position:sticky; top:0; z-index:10;
       backdrop-filter: blur(12px);
       background: color-mix(in srgb, var(--bg) 70%, transparent);
       border-bottom:1px solid var(--line);
     }
-    .nav{max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;}
+    .nav{
+      max-width:1200px; margin:0 auto; padding:14px 16px;
+      display:flex; justify-content:space-between; gap:12px;
+      flex-wrap:wrap; align-items:center;
+    }
     .brand{display:flex; gap:10px; align-items:center; font-weight:950; letter-spacing:.3px}
-    .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 0 6px rgba(123,92,255,.12)}
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 0 0 6px rgba(123,92,255,.12)
+    }
     .pill{
       border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--text);
       border-radius:999px; padding:9px 12px; font-size:12px; cursor:pointer;
@@ -40,121 +51,130 @@
       background:linear-gradient(135deg, rgba(123,92,255,.28), rgba(167,139,250,.18));
       border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
     }
-    .wrap{max-width:1200px; margin:0 auto; padding:22px 16px 70px;}
+
+    .wrap{max-width:1200px; margin:0 auto; padding:22px 16px 70px; min-height:100vh;}
     .h1{font-size:34px; font-weight:950; letter-spacing:-.6px; margin:14px 0 6px}
     .sub{color:var(--muted); font-size:13px; margin:0 0 18px; line-height:1.6}
     .topbar{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;}
     .search{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
     input{
       border:1px solid var(--line);
       background: rgba(255,255,255,.035); color:var(--text);
       border-radius:12px; padding:11px 12px; outline:none; font-size:14px;
       width: min(360px, 100%);
     }
-    @media (max-width: 700px){
-  .gridCards{
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
-  }
-  .tThumb{ aspect-ratio: 4 / 3; }  /* 1:1 -> 4:3로 바꿔 높이 축소 */
-  .tBody{ padding: 10px; gap: 6px; }
-  .btn{ padding: 8px 9px; font-size: 12px; }
-  .btn.small{ min-width: 84px; }
-.gridCards{
-  margin-top:12px;
-  display:grid;
-  gap:12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-    @media (max-width:1180px){ .gridCards{grid-template-columns:repeat(3,1fr)} }
-    @media (max-width:900px){ .gridCards{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
-    .tCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90)); border-radius:var(--r); overflow:hidden; box-shadow: var(--shadow);}
-    /* 정사각형 썸네일 */
-/* 썸네일 크기 축소(카드가 화면을 다 먹지 않게) */
-.tThumb{
-  aspect-ratio: 16 / 9;      /* 1:1 → 16:9로 높이 줄임 */
-  max-height: 220px;         /* 너무 커지지 않게 캡 */
-  overflow: hidden;
-  background: rgba(255,255,255,.03);
-  position: relative;
-}
-.tThumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.52))}
+    .note{color:var(--muted); font-size:12px; line-height:1.55}
+    .sep{height:1px; background:var(--line); margin:12px 0;}
+
+    /* ✅ 핵심: 카드가 1개여도 과대해지지 않게 최대폭 제한 */
+    .gridCards{
+      margin-top:12px;
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+      justify-content:start;
+      align-items:start;
+    }
+
+    .tCard{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90));
+      border-radius:var(--r);
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+
+    /* ✅ 핵심: 썸네일 고정 높이로 줄이기 */
+    .tThumb{
+      height:220px;               /* 180~260 사이 조절 */
+      overflow:hidden;
+      background:rgba(255,255,255,.03);
+      position:relative;
+    }
+    .tThumb img{width:100%; height:100%; object-fit:cover; display:block;}
+    .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 55%, rgba(0,0,0,.55))}
+
     .tBody{padding:12px 12px 14px; display:grid; gap:7px}
     .badge{
       display:inline-flex; align-items:center; gap:6px;
       font-size:11px; font-weight:900; letter-spacing:.08em;
       padding:6px 10px; border-radius:999px; border:1px solid var(--line);
-      background: rgba(255,255,255,.04); color: color-mix(in srgb, var(--text) 86%, var(--muted));
+      background: rgba(255,255,255,.04);
+      color: color-mix(in srgb, var(--text) 86%, var(--muted));
       width:fit-content;
     }
-     .tTitle{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .tDesc{
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;}
+    .tTitle{font-weight:950; letter-spacing:-.2px; font-size:14px; margin:0}
+    .tDesc{color: color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:12.5px; line-height:1.45; margin:0; white-space:pre-wrap;}
     .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
     .chip{font-size:12px; padding:6px 9px; border-radius:999px; background:var(--chip); border:1px solid var(--line); color: color-mix(in srgb, var(--text) 86%, var(--muted));}
-    .btns{display:flex; gap:8px; margin-top:4px}
-    .btn{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      border-radius:12px; padding:9px 10px; cursor:pointer; font-weight:800; font-size:13px;
-      color:var(--text);
-      flex:1;
-    }
-     .btn{ display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
-    a.btn{ color:var(--text); }
-    .btn.accent{
-      background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18));
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-    }
-    .btn.small{flex:0 0 auto; min-width: 96px; padding:9px 12px}
+
     .error{
       border:1px solid color-mix(in srgb, #ff4d4d 45%, var(--line));
       background:rgba(255,77,77,.08);
-      border-radius:12px; padding:12px; color:color-mix(in srgb, #ffd0d0 88%, var(--muted));
+      border-radius:12px; padding:12px;
+      color:color-mix(in srgb, #ffd0d0 88%, var(--muted));
       margin-top:12px;
       white-space:pre-wrap;
     }
+
     /* 표시 카운트 숨김 */
-    #count { display:none !important; }
-    html, body { height: 100%; }
-.wrap { min-height: 100vh; }
-      /* ===== embed(iframe) 프리뷰 전용 컴팩트 모드 ===== */
-.embed header{ position: static; }                  /* sticky 제거(프리뷰에서 UI 가림 방지) */
-.embed .nav{ padding:10px 12px; }
-.embed .wrap{ max-width: 100%; padding: 12px 12px 18px; }
-.embed .h1{ font-size: 22px; margin: 10px 0 4px; }
-.embed .sub{ font-size: 12px; margin-bottom: 10px; }
+    #count{display:none !important;}
 
-.embed input{ width: min(260px, 100%); }
-.embed .topbar{ gap: 8px; }
+    /* ✅ 하단 버튼 UI가 호스트/브라우저 기본 스타일로 깨지지 않게 강제 */
+    .btns{display:flex !important; gap:8px !important; margin-top:4px !important;}
+    .btn,
+    .btn:link,
+    .btn:visited{
+      display:inline-flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      text-decoration:none !important;
 
-.embed .gridCards{
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-}
+      border:1px solid var(--line) !important;
+      background: rgba(255,255,255,.04) !important;
+      color: var(--text) !important;
 
-/* 핵심: 썸네일이 프리뷰를 잡아먹는 문제 해결 */
-.embed .tThumb{ aspect-ratio: 16/9; }
-.embed .tThumb img{ object-fit: cover; }
+      border-radius:12px !important;
+      padding:9px 10px !important;
+      font-weight:800 !important;
+      font-size:13px !important;
 
-/* 카드 밀도 올리기 */
-.embed .tBody{ padding: 10px; gap: 6px; }
-.embed .badge{ font-size: 10px; padding: 5px 8px; }
-.embed .tTitle{ font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      cursor:pointer !important;
+      user-select:none !important;
+      flex:1 1 auto !important;
+      line-height:1.1 !important;
+      min-height:36px !important;
 
-/* 프리뷰에선 설명은 과감히 숨김(원하면 1~2줄로 clamp 가능) */
-.embed .tDesc{ display:none; }
+      appearance:none !important;
+      -webkit-appearance:none !important;
+      outline:none !important;
+    }
+    .btn.accent{
+      background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18)) !important;
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line)) !important;
+    }
+    .btn.small{
+      flex:0 0 auto !important;
+      min-width:96px !important;
+      padding:9px 12px !important;
+    }
 
-.embed .btn{ padding: 8px 9px; font-size: 12px; border-radius: 10px; }
-.embed .btn.small{ min-width: 84px; }
-
+    /* 임베드(iframe)면 더 컴팩트 */
+    .embed header{position:static;}
+    .embed .nav{padding:10px 12px;}
+    .embed .wrap{max-width:100%; padding:12px 12px 18px;}
+    .embed .h1{font-size:22px; margin:10px 0 4px;}
+    .embed .sub{font-size:12px; margin-bottom:10px;}
+    .embed .gridCards{grid-template-columns: repeat(auto-fit, minmax(200px, 320px));}
+    .embed .tThumb{height:180px;}
+    .embed .tDesc{
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
   </style>
 </head>
+
 <body>
 <header>
   <div class="nav">
@@ -191,8 +211,10 @@
 </div>
 
 <script>
-  // ✅ 너 시트 ID 기반 + gid 고정
+  // iframe(임베드) 여부 감지 → embed 컴팩트 모드
   document.documentElement.classList.toggle('embed', window.self !== window.top);
+
+  // ✅ 너 시트 ID + gid 고정
   const GVIZ_URL =
     "https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/gviz/tq?gid=745673070&tqx=out:json";
 
@@ -203,7 +225,7 @@
 
   function placeholder(){
     const svg = encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="576">
         <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0" stop-color="#1b2030"/><stop offset="1" stop-color="#060812"/>
         </linearGradient></defs>
@@ -232,10 +254,10 @@
           <p class="tTitle">${esc(t.title)}</p>
           <p class="tDesc">${esc(t.desc||"")}</p>
           <div class="chips">${chipHtml}</div>
-<div class="btns">
-  <a class="btn accent" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">열기</a>
-  <button class="btn small" data-copy="${esc(t.url)}">링크 복사</button>
-</div>
+          <div class="btns">
+            <a class="btn accent" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">열기</a>
+            <button class="btn small" data-copy="${esc(t.url)}">링크 복사</button>
+          </div>
         </div>
       </article>
     `;
@@ -266,7 +288,6 @@
       return !q || hay.includes(q);
     });
 
-    // 카운트는 숨김 처리됨(#count display none)
     if ($("count")) $("count").textContent = `표시: ${list.length}`;
 
     $("cards").innerHTML = list.map(cardHtml).join("");
@@ -304,10 +325,9 @@
       const resp = await loadViaGviz();
       const rows = gvizToRows(resp);
 
-      // 최신순(시트는 아래로 쌓이는 전제)
       const latestFirst = rows.slice().reverse();
 
-      // 컬럼 A~F: ts,title,url,desc,thumb,genre
+      // A~F: ts,title,url,desc,thumb,genre
       tracks = latestFirst
         .map(r => ({
           ts: (r[0] ?? "").toString().trim(),
