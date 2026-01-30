@@ -98,8 +98,10 @@
   <div class="nav">
     <div class="brand"><span class="dot"></span> SUNO TRACK HUB</div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button class="pill" id="btnReload">RELOAD</button>
-      <a class="pill accent" href="https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/edit?usp=sharing" target="_blank" rel="noopener noreferrer">OPEN SHEET</a>
+<button class="pill" id="btnReload">새로고침</button>
+<a class="pill accent"
+   href="https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/edit?usp=sharing"
+   target="_blank" rel="noopener noreferrer">시트 열기</a>
     </div>
   </div>
 </header>
@@ -107,14 +109,14 @@
 <div class="wrap">
   <div class="h1">GAMES</div>
   <p class="sub">
-    Google Sheets에서 자동 로드합니다(서버 없이 동작하는 GViz 방식).<br/>
-    정렬: <b>최신순(행 역순)</b> · 클릭: <b>새 탭</b>
+구글 시트에서 목록을 불러옵니다.<br/>
+정렬: <b>최신순</b> · 클릭: <b>새 탭</b>
   </p>
 
   <div class="topbar">
     <div class="search">
       <input id="q" placeholder="검색: 제목/설명/장르" />
-      <button class="pill" id="btnClear">CLEAR</button>
+<button class="pill" id="btnClear">지우기</button>
     </div>
     <div class="note" id="count">—</div>
   </div>
@@ -173,9 +175,9 @@ const GVIZ_URL =
           <div class="chips">${chips}</div>
           <div class="btns">
             <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer" style="flex:1;">
-              <button class="btn accent" style="width:100%">OPEN</button>
+<button class="btn accent" style="width:100%">열기</button>
             </a>
-            <button class="btn small" data-copy="${esc(t.url)}">COPY</button>
+<button class="btn small" data-copy="${esc(t.url)}">링크 복사</button>
           </div>
         </div>
       </article>
@@ -189,7 +191,7 @@ const GVIZ_URL =
         try{
           await navigator.clipboard.writeText(url);
           const old = btn.textContent;
-          btn.textContent = "COPIED";
+btn.textContent = "복사됨";
           setTimeout(()=>btn.textContent = old, 900);
         }catch{
           prompt("복사할 링크:", url);
@@ -197,7 +199,7 @@ const GVIZ_URL =
       }, { once:true });
     });
   }
-
+#count { display: none !important; }
   let tracks = [];
 
   function render(){
