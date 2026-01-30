@@ -190,7 +190,12 @@
 @media (max-width: 560px){
   .actions{ width:100%; }
 }
-
+/* NEW 배지: 저채도 레드(로즈) 톤 */
+.badge.badge-new{
+  border-color: rgba(255, 99, 99, .22);
+  background: rgba(255, 99, 99, .10);
+  color: rgba(255, 210, 210, .92);
+}
   </style>
 </head>
 
@@ -262,7 +267,7 @@
     const img = (t.thumb && /^https?:\/\//i.test(t.thumb)) ? t.thumb : placeholder();
     const chipHtml = t.genre ? `<span class="chip">${esc(t.genre)}</span>` : "";
     const isNew = isNew3Days(t.ts);
-    const badgeHtml = isNew ? `<span class="badge">NEW</span>` : "";
+const badgeHtml = isNew ? `<span class="badge badge-new">NEW</span>` : "";
 
     return `
       <article class="tCard">
