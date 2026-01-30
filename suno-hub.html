@@ -267,7 +267,7 @@
     const img = (t.thumb && /^https?:\/\//i.test(t.thumb)) ? t.thumb : placeholder();
     const chipHtml = t.genre ? `<span class="chip">${esc(t.genre)}</span>` : "";
     const isNew = isNew3Days(t.ts);
-const badgeHtml = isNew ? `<span class="badge badge-new">NEW</span>` : "";
+    const badgeHtml = isNew ? `<span class="badge badge-new">NEW</span>` : "";
 
     return `
       <article class="tCard">
