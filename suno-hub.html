@@ -107,7 +107,7 @@
 </header>
 
 <div class="wrap">
-  <div class="h1">GAMES</div>
+<div class="h1">AI SONGS</div>
   <p class="sub">
 구글 시트에서 목록을 불러옵니다.<br/>
 정렬: <b>최신순</b> · 클릭: <b>새 탭</b>
@@ -118,7 +118,7 @@
       <input id="q" placeholder="검색: 제목/설명/장르" />
 <button class="pill" id="btnClear">지우기</button>
     </div>
-    <div class="note" id="count">—</div>
+<div class="note" id="count" style="display:none">—</div>
   </div>
 
   <div class="sep"></div>
@@ -199,7 +199,6 @@ btn.textContent = "복사됨";
       }, { once:true });
     });
   }
-#count { display: none !important; }
   let tracks = [];
 
   function render(){
@@ -282,7 +281,7 @@ btn.textContent = "복사됨";
   $("q").addEventListener("input", render);
   $("btnReload").addEventListener("click", load);
   $("btnClear").addEventListener("click", ()=>{ $("q").value=""; render(); });
-
+#count { display: none !important; }
   load();
 </script>
 </body>
