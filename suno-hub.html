@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SUNO TRACK HUB</title>
+  <style>
+    :root{
+      --bg:#070a12; --panel:#0c1020; --panel2:#0a0e1b;
+      --line:rgba(255,255,255,.08);
+      --muted:rgba(255,255,255,.55);
+      --text:rgba(255,255,255,.92);
+      --chip:rgba(255,255,255,.06);
+      --accent:#7b5cff; --accent2:#a78bfa;
+      --r:16px; --shadow:0 18px 60px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", sans-serif;
+      background: radial-gradient(900px 700px at 70% 10%, rgba(123,92,255,.18), transparent 60%),
+                  radial-gradient(700px 600px at 20% 40%, rgba(167,139,250,.10), transparent 60%),
+                  linear-gradient(180deg, #060812, #05060c);
+    }
+    a{color:inherit; text-decoration:none}
+    header{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--bg) 70%, transparent);
+      border-bottom:1px solid var(--line);
+    }
+    .nav{max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;}
+    .brand{display:flex; gap:10px; align-items:center; font-weight:950; letter-spacing:.3px}
+    .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 0 6px rgba(123,92,255,.12)}
+    .pill{
+      border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--text);
+      border-radius:999px; padding:9px 12px; font-size:12px; cursor:pointer;
+    }
+    .pill.accent{background:linear-gradient(135deg, rgba(123,92,255,.28), rgba(167,139,250,.18));
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));}
+    .wrap{max-width:1200px; margin:0 auto; padding:22px 16px 70px;}
+    .h1{font-size:34px; font-weight:950; letter-spacing:-.6px; margin:14px 0 6px}
+    .sub{color:var(--muted); font-size:13px; margin:0 0 18px; line-height:1.6}
+    .topbar{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+    .search{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    input{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.035); color:var(--text);
+      border-radius:12px; padding:11px 12px; outline:none; font-size:14px;
+      width:320px;
+    }
+    @media (max-width:560px){ input{width:100%} }
+    .note{color:var(--muted); font-size:12px; line-height:1.55}
+    .sep{height:1px; background:var(--line); margin:12px 0;}
+    .gridCards{margin-top:12px; display:grid; grid-template-columns: repeat(4,1fr); gap:12px;}
+    @media (max-width:1180px){ .gridCards{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width:900px){ .gridCards{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
+    .tCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90)); border-radius:var(--r); overflow:hidden; box-shadow: var(--shadow);}
+    .tThumb{aspect-ratio:16/9; background:rgba(255,255,255,.03); position:relative;}
+    .tThumb img{width:100%; height:100%; object-fit:cover; display:block;}
+    .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.52))}
+    .tBody{padding:12px 12px 14px; display:grid; gap:7px}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:11px; font-weight:900; letter-spacing:.08em;
+      padding:6px 10px; border-radius:999px; border:1px solid var(--line);
+      background: rgba(255,255,255,.04); color: color-mix(in srgb, var(--text) 86%, var(--muted));
+      width:fit-content;
+    }
+    .tTitle{font-weight:950; letter-spacing:-.2px; font-size:14px; margin:0}
+    .tMeta{color:var(--muted); font-size:12px; display:flex; gap:8px; flex-wrap:wrap}
+    .tDesc{color: color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:12.5px; line-height:1.45; margin:0; white-space:pre-wrap;}
+    .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
+    .chip{font-size:12px; padding:6px 9px; border-radius:999px; background:var(--chip); border:1px solid var(--line); color: color-mix(in srgb, var(--text) 86%, var(--muted));}
+    .btns{display:flex; gap:8px; margin-top:4px}
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:12px; padding:9px 10px; cursor:pointer; font-weight:800; font-size:13px;
+      color:var(--text);
+      flex:1;
+    }
+    .btn.accent{background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18));
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));}
+    .btn.small{flex:0 0 auto; padding:9px 12px}
+    .error{
+      border:1px solid color-mix(in srgb, #ff4d4d 45%, var(--line));
+      background:rgba(255,77,77,.08);
+      border-radius:12px; padding:12px; color:color-mix(in srgb, #ffd0d0 88%, var(--muted));
+      margin-top:12px;
+      white-space:pre-wrap;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="brand"><span class="dot"></span> SUNO TRACK HUB</div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button class="pill" id="btnReload">RELOAD</button>
+      <a class="pill accent" href="https://docs.google.com/spreadsheets/d/1E742yCiKdQKf6ZEcIJ7HPrhpvItKKIJaCPVmkFdanSM/edit?usp=sharing" target="_blank" rel="noopener noreferrer">OPEN SHEET</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="h1">GAMES</div>
+  <p class="sub">
+    Google Sheets에서 자동 로드합니다(서버 없이 동작하는 GViz 방식).<br/>
+    정렬: <b>최신순(행 역순)</b> · 클릭: <b>새 탭</b>
+  </p>
+
+  <div class="topbar">
+    <div class="search">
+      <input id="q" placeholder="검색: 제목/설명/장르" />
+      <button class="pill" id="btnClear">CLEAR</button>
+    </div>
+    <div class="note" id="count">—</div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div id="err" class="error" style="display:none;"></div>
+  <div id="cards" class="gridCards"></div>
+  <div id="empty" class="note" style="display:none;">표시할 곡이 없습니다.</div>
+</div>
+
+<script>
+  // ✅ 너 시트(Published) 기반 GViz URL
+  // gid는 예전에 쓰던 응답 탭 gid(745673070) 기준. 만약 로드가 0개면 gid 값을 바꿔야 함.
+  const GVIZ_URL =
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqbfKg_X9gd_OJeMhGo2BMslOt2y2QoMxY8mfAUHW5Jnf4Yi122-GA2owuBtpk4obaFR1jTXvzrwF0/gviz/tq?gid=745673070&tqx=out:json";
+
+  const $ = (id)=>document.getElementById(id);
+  const esc = (s) => (s ?? "").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  const norm = (s)=> (s||"").toString().toLowerCase().trim();
+
+  function placeholder(){
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720">
+        <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#1b2030"/><stop offset="1" stop-color="#060812"/>
+        </linearGradient></defs>
+        <rect width="100%" height="100%" fill="url(#g)"/>
+        <text x="50%" y="50%" fill="rgba(255,255,255,.55)" font-size="44" font-family="Arial, sans-serif"
+          text-anchor="middle" dominant-baseline="middle">No Cover</text>
+      </svg>
+    `);
+    return `data:image/svg+xml;charset=utf-8,${svg}`;
+  }
+
+  function cardHtml(t){
+    const img = (t.thumb && /^https?:\/\//i.test(t.thumb)) ? t.thumb : placeholder();
+    const meta = [
+      t.genre ? `genre: ${esc(t.genre)}` : "genre: —",
+      t.ts ? `ts: ${esc(t.ts)}` : ""
+    ].filter(Boolean).join(" • ");
+
+    const chips = t.genre ? `<span class="chip">${esc(t.genre)}</span>` : "";
+
+    return `
+      <article class="tCard">
+        <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">
+          <div class="tThumb"><img alt="cover" src="${esc(img)}"/></div>
+        </a>
+        <div class="tBody">
+          <span class="badge">LIVE</span>
+          <p class="tTitle">${esc(t.title)}</p>
+          <div class="tMeta">${meta}</div>
+          <p class="tDesc">${esc(t.desc||"")}</p>
+          <div class="chips">${chips}</div>
+          <div class="btns">
+            <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer" style="flex:1;">
+              <button class="btn accent" style="width:100%">OPEN</button>
+            </a>
+            <button class="btn small" data-copy="${esc(t.url)}">COPY</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function wireCopy(){
+    document.querySelectorAll("[data-copy]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const url = btn.getAttribute("data-copy") || "";
+        try{
+          await navigator.clipboard.writeText(url);
+          const old = btn.textContent;
+          btn.textContent = "COPIED";
+          setTimeout(()=>btn.textContent = old, 900);
+        }catch{
+          prompt("복사할 링크:", url);
+        }
+      }, { once:true });
+    });
+  }
+
+  let tracks = [];
+
+  function render(){
+    const q = norm($("q").value);
+    const list = tracks.filter(t=>{
+      const hay = norm([t.title, t.desc, t.genre].join(" | "));
+      return !q || hay.includes(q);
+    });
+
+    $("count").textContent = `표시: ${list.length}`;
+    $("cards").innerHTML = list.map(cardHtml).join("");
+    $("empty").style.display = list.length ? "none" : "block";
+    wireCopy();
+  }
+
+  function loadViaGviz(){
+    return new Promise((resolve, reject) => {
+      // gviz가 호출하는 콜백을 가로채기 (JSONP)
+      window.google = window.google || {};
+      google.visualization = google.visualization || {};
+      google.visualization.Query = google.visualization.Query || {};
+      google.visualization.Query.setResponse = (resp) => resolve(resp);
+
+      const s = document.createElement("script");
+      s.src = GVIZ_URL + "&_=" + Date.now(); // 캐시 방지
+      s.onerror = () => reject(new Error("gviz script load failed"));
+      document.head.appendChild(s);
+    });
+  }
+
+  function gvizToRows(resp){
+    // resp.table.rows = [{c:[{v:...},{v:...},...]}...]
+    const rows = resp?.table?.rows || [];
+    return rows.map(r => (r.c || []).map(cell => cell?.v ?? ""));
+  }
+
+  async function load(){
+    $("err").style.display="none";
+    $("err").textContent="";
+    $("count").textContent="로딩 중…";
+    $("cards").innerHTML="";
+    $("empty").style.display="none";
+
+    try{
+      const resp = await loadViaGviz();
+      const rows = gvizToRows(resp);
+
+      // 최신순: 시트는 신규 응답이 아래로 쌓이므로 역순 렌더
+      const latestFirst = rows.slice().reverse();
+
+      // 컬럼 A~F 매핑: ts,title,url,desc,thumb,genre
+      tracks = latestFirst
+        .map(r => ({
+          ts: (r[0] ?? "").toString().trim(),
+          title: (r[1] ?? "").toString().trim(),
+          url: (r[2] ?? "").toString().trim(),
+          desc: (r[3] ?? "").toString().trim(),
+          thumb: (r[4] ?? "").toString().trim(),
+          genre: (r[5] ?? "").toString().trim(),
+        }))
+        .filter(t => t.title && t.url);
+
+      render();
+
+      if (tracks.length === 0){
+        $("err").style.display="block";
+        $("err").textContent =
+          "로드는 됐는데 표시할 데이터가 0개입니다.\n" +
+          "1) gid가 응답 시트 탭 gid와 다를 수 있음\n" +
+          "2) 시트에 (제목/URL) 값이 비어있는 행만 있을 수 있음\n\n" +
+          "현재 GVIZ_URL:\n" + GVIZ_URL;
+      }
+    }catch(e){
+      $("count").textContent="—";
+      $("err").style.display="block";
+      $("err").textContent = "로드 실패(GViz): " + (e?.message || e);
+    }
+  }
+
+  $("q").addEventListener("input", render);
+  $("btnReload").addEventListener("click", load);
+  $("btnClear").addEventListener("click", ()=>{ $("q").value=""; render(); });
+
+  load();
+</script>
+</body>
+</html>
