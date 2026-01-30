@@ -71,8 +71,15 @@
     @media (max-width:560px){ .gridCards{grid-template-columns:1fr} }
     .tCard{border:1px solid var(--line); background:linear-gradient(180deg, rgba(12,16,32,.80), rgba(10,14,27,.90)); border-radius:var(--r); overflow:hidden; box-shadow: var(--shadow);}
     /* 정사각형 썸네일 */
-    .tThumb{aspect-ratio:1/1; background:rgba(255,255,255,.03); position:relative;}
-    .tThumb img{width:100%; height:100%; object-fit:cover; display:block;}
+/* 썸네일 크기 축소(카드가 화면을 다 먹지 않게) */
+.tThumb{
+  aspect-ratio: 16 / 9;      /* 1:1 → 16:9로 높이 줄임 */
+  max-height: 220px;         /* 너무 커지지 않게 캡 */
+  overflow: hidden;
+  background: rgba(255,255,255,.03);
+  position: relative;
+}
+.tThumb img{ width:100%; height:100%; object-fit:cover; display:block; }
     .tThumb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.52))}
     .tBody{padding:12px 12px 14px; display:grid; gap:7px}
     .badge{
@@ -98,6 +105,8 @@
       color:var(--text);
       flex:1;
     }
+     .btn{ display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+    a.btn{ color:var(--text); }
     .btn.accent{
       background:linear-gradient(135deg, rgba(123,92,255,.34), rgba(167,139,250,.18));
       border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
@@ -223,12 +232,10 @@
           <p class="tTitle">${esc(t.title)}</p>
           <p class="tDesc">${esc(t.desc||"")}</p>
           <div class="chips">${chipHtml}</div>
-          <div class="btns">
-            <a href="${esc(t.url)}" target="_blank" rel="noopener noreferrer" style="flex:1;">
-              <button class="btn accent" style="width:100%">열기</button>
-            </a>
-            <button class="btn small" data-copy="${esc(t.url)}">링크 복사</button>
-          </div>
+<div class="btns">
+  <a class="btn accent" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">열기</a>
+  <button class="btn small" data-copy="${esc(t.url)}">링크 복사</button>
+</div>
         </div>
       </article>
     `;
